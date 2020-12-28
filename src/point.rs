@@ -54,9 +54,9 @@ mod tests {
     #[test]
     fn create_point() {
         let a = Point::new(4.3, -4.2, 3.1);
-        assert_eq!(a.x, 4.3);
-        assert_eq!(a.y, -4.2);
-        assert_eq!(a.z, 3.1);
+        assert!(crate::equal(a.x, 4.3));
+        assert!(crate::equal(a.y, -4.2));
+        assert!(crate::equal(a.z, 3.1));
     }
 
     #[test]

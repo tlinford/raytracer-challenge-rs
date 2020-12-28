@@ -107,9 +107,9 @@ mod tests {
     #[test]
     fn create_vector() {
         let a = Vector::new(4.3, -4.2, 3.1);
-        assert_eq!(a.x, 4.3);
-        assert_eq!(a.y, -4.2);
-        assert_eq!(a.z, 3.1);
+        assert!(crate::equal(a.x, 4.3));
+        assert!(crate::equal(a.y, -4.2));
+        assert!(crate::equal(a.z, 3.1));
     }
 
     #[test]
@@ -186,7 +186,7 @@ mod tests {
         ];
 
         for (vector, result) in table {
-            assert_eq!(vector.magnitude(), result);
+            assert!(crate::equal(vector.magnitude(), result));
         }
     }
 
@@ -202,7 +202,7 @@ mod tests {
 
         for (vector, result) in table {
             assert_eq!(vector.normalize(), result);
-            assert_eq!(vector.normalize().magnitude(), 1.);
+            assert!(crate::equal(vector.normalize().magnitude(), 1.0));
         }
     }
 
@@ -211,8 +211,8 @@ mod tests {
         let a = Vector::new(1.0, 2.0, 3.0);
         let b = Vector::new(2.0, 3.0, 4.0);
         let expected = 20.0;
-        assert_eq!(dot(a, b), expected);
-        assert_eq!(dot(b, a), expected);
+        assert!(crate::equal(dot(a, b), expected));
+        assert!(crate::equal(dot(b, a), expected));
     }
 
     #[test]
