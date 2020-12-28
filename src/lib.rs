@@ -1,4 +1,5 @@
-pub mod tuple;
+pub mod point;
+pub mod vector;
 
 const EPSILON: f64 = 0.00001;
 

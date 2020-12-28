@@ -1,11 +1,11 @@
-use raytracer_challenge_rs::tuple::Tuple;
+use raytracer::{point::Point, vector::Vector};
 
 fn main() {
     let mut p = Projectile::new(
-        Tuple::point(0., 1., 0.0),
-        Tuple::vector(1., 1., 0.).normalize() * 2.0f64,
+        Point::new(0., 1., 0.0),
+        Vector::new(1., 1., 0.).normalize() * 2.0f64,
     );
-    let e = Environment::new(Tuple::vector(0., -0.1, 0.), Tuple::vector(-0.01, 0., 0.));
+    let e = Environment::new(Vector::new(0., -0.1, 0.), Vector::new(-0.01, 0., 0.));
 
     println!("Launching projectile {:?}\nwith environment: {:?}\n", p, e);
 
@@ -20,24 +20,24 @@ fn main() {
 
 #[derive(Debug)]
 struct Projectile {
-    position: Tuple,
-    velocity: Tuple,
+    position: Point,
+    velocity: Vector,
 }
 
 impl Projectile {
-    fn new(position: Tuple, velocity: Tuple) -> Self {
+    fn new(position: Point, velocity: Vector) -> Self {
         Self { position, velocity }
     }
 }
 
 #[derive(Debug)]
 struct Environment {
-    gravity: Tuple,
-    wind: Tuple,
+    gravity: Vector,
+    wind: Vector,
 }
 
 impl Environment {
-    fn new(gravity: Tuple, wind: Tuple) -> Self {
+    fn new(gravity: Vector, wind: Vector) -> Self {
         Self { gravity, wind }
     }
 }

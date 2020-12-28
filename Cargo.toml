@@ -1,5 +1,5 @@
 [package]
-name = "raytracer-challenge-rs"
+name = "raytracer"
 version = "0.1.0"
 authors = ["Thomas Linford <linford.t@gmail.com>"]
 edition = "2018"
