@@ -1,7 +1,7 @@
 use crate::color::Color;
 
 #[derive(Debug)]
-struct Canvas {
+pub struct Canvas {
     width: usize,
     height: usize,
     pixels: Vec<Color>,
@@ -18,11 +18,19 @@ impl Canvas {
         }
     }
 
-    pub fn pixel_at(&self, x: usize, y: usize) -> Color {
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
+
+    pub fn get_pixel(&self, x: usize, y: usize) -> Color {
         self.pixels[self.pixel_idx(x, y)]
     }
 
-    pub fn write_pixel(&mut self, x: usize, y: usize, color: Color) {
+    pub fn set_pixel(&mut self, x: usize, y: usize, color: Color) {
         let idx = self.pixel_idx(x, y);
         self.pixels[idx] = color;
     }
@@ -75,7 +83,7 @@ mod tests {
     fn write_pixel() {
         let mut c = Canvas::new(10, 20);
         let red = Color::new(1.0, 0.0, 0.0);
-        c.write_pixel(2, 3, red);
-        assert_eq!(c.pixel_at(2, 3), red);
+        c.set_pixel(2, 3, red);
+        assert_eq!(c.get_pixel(2, 3), red);
     }
 }

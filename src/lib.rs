@@ -1,6 +1,7 @@
 pub mod canvas;
 pub mod color;
 pub mod point;
+pub mod ppm;
 pub mod vector;
 
 const EPSILON: f64 = 0.00001;
