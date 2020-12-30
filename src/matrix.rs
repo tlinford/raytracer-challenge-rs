@@ -1,9 +1,10 @@
 use std::{
-    ops::{Index, IndexMut},
+    ops::{Index, IndexMut, Mul},
     vec,
 };
 
-struct Matrix {
+#[derive(Debug)]
+pub struct Matrix {
     rows: usize,
     columns: usize,
     elements: Vec<f64>,
@@ -18,12 +19,32 @@ impl Matrix {
         }
     }
 
-    pub fn from(rows: usize, columns: usize, slice: &[f64]) -> Self {
+    pub fn from_slice<T: Into<f64> + Copy>(rows: usize, columns: usize, slice: &[T]) -> Self {
         assert_eq!(rows * columns, slice.len());
         Self {
             rows,
             columns,
-            elements: slice.to_vec(),
+            elements: slice.iter().map(|&n| n.into()).collect(),
+        }
+    }
+
+    pub fn from_rows<T: Into<f64> + Copy>(
+        rows: usize,
+        columns: usize,
+        row_slices: &[&[T]],
+    ) -> Self {
+        assert_eq!(row_slices.len(), rows);
+
+        let mut elements = Vec::new();
+        row_slices.iter().for_each(|s| {
+            assert!(s.len() == columns);
+            s.iter().map(|&n| n.into()).for_each(|f| elements.push(f));
+        });
+
+        Self {
+            rows,
+            columns,
+            elements,
         }
     }
 
@@ -55,6 +76,37 @@ impl IndexMut<(usize, usize)> for Matrix {
     }
 }
 
+impl PartialEq for Matrix {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.elements
+            .iter()
+            .zip(rhs.elements.iter())
+            .all(|(&l, &r)| l == r)
+    }
+}
+
+impl Mul for Matrix {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self {
+        assert_eq!(self.columns, rhs.rows);
+
+        let mut m = Matrix::zero(self.rows, rhs.columns);
+
+        for row in 0..self.rows {
+            for col in 0..rhs.columns {
+                let mut c = 0.0;
+                for i in 0..self.columns {
+                    c += self[(row, i)] * rhs[(i, col)]
+                }
+                m[(row, col)] = c;
+            }
+        }
+
+        m
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -63,7 +115,7 @@ mod tests {
     #[test]
     fn create_matrix_wrong_dimensions() {
         #[rustfmt::skip]
-        let _m = Matrix::from(
+        let _m = Matrix::from_slice(
             5,
             5,
             &[
@@ -78,7 +130,7 @@ mod tests {
     #[test]
     fn create_matrix_4x4() {
         #[rustfmt::skip]
-        let m = Matrix::from(
+        let m = Matrix::from_slice(
             4,
             4,
             &[
@@ -103,7 +155,7 @@ mod tests {
 
     #[test]
     fn create_matrix_2x2() {
-        let m = Matrix::from(2, 2, &[-3.0, 5.0, 1.0, -2.0]);
+        let m = Matrix::from_slice(2, 2, &[-3.0, 5.0, 1.0, -2.0]);
 
         assert_eq!(m.rows(), 2);
         assert_eq!(m.columns(), 2);
@@ -116,7 +168,7 @@ mod tests {
 
     #[test]
     fn create_matrix_3x3() {
-        let m = Matrix::from(3, 3, &[-3.0, 5.0, 0.0, 1.0, -2.0, -7.0, 0.0, 1.0, 1.0]);
+        let m = Matrix::from_slice(3, 3, &[-3.0, 5.0, 0.0, 1.0, -2.0, -7.0, 0.0, 1.0, 1.0]);
 
         assert_eq!(m.rows(), 3);
         assert_eq!(m.columns(), 3);
@@ -124,5 +176,74 @@ mod tests {
         assert!(crate::equal(m[(0, 0)], -3.0));
         assert!(crate::equal(m[(1, 1)], -2.0));
         assert!(crate::equal(m[(2, 2)], 1.0));
+    }
+
+    #[test]
+    fn identical_matrices_are_equal() {
+        let a = Matrix::from_slice(
+            4,
+            4,
+            &[
+                1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0,
+            ],
+        );
+        let b = Matrix::from_rows(
+            4,
+            4,
+            &[
+                &[1.0, 2.0, 3.0, 4.0],
+                &[5.0, 6.0, 7.0, 8.0],
+                &[9.0, 8.0, 7.0, 6.0],
+                &[5.0, 4.0, 3.0, 2.0],
+            ],
+        );
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn different_matrices_are_not_equal() {
+        let a = Matrix::from_slice(
+            4,
+            4,
+            &[
+                1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0,
+            ],
+        );
+        let b = Matrix::from_slice(
+            4,
+            4,
+            &[
+                2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0,
+            ],
+        );
+        assert_ne!(a, b);
+    }
+
+    #[test]
+    fn muliply_two_matrices() {
+        let a = Matrix::from_slice(
+            4,
+            4,
+            &[
+                1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0,
+            ],
+        );
+
+        let b = Matrix::from_rows(
+            4,
+            4,
+            &[&[-2, 1, 2, 3], &[3, 2, 1, -1], &[4, 3, 6, 5], &[1, 2, 7, 8]],
+        );
+        let expected = Matrix::from_rows(
+            4,
+            4,
+            &[
+                &[20, 22, 50, 48],
+                &[44, 54, 114, 108],
+                &[40, 58, 110, 102],
+                &[16, 26, 46, 42],
+            ],
+        );
+        assert_eq!(a * b, expected);
     }
 }
