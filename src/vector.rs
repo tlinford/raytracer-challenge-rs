@@ -10,8 +10,12 @@ pub struct Vector {
 }
 
 impl Vector {
-    pub fn new(x: f64, y: f64, z: f64) -> Self {
-        Self { x, y, z }
+    pub fn new<T: Into<f64> + Copy>(x: T, y: T, z: T) -> Self {
+        Self {
+            x: x.into(),
+            y: y.into(),
+            z: z.into(),
+        }
     }
 
     pub fn magnitude(&self) -> f64 {
