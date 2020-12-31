@@ -53,6 +53,19 @@ pub fn rotation_z(radians: f64) -> Matrix {
     r
 }
 
+pub fn shearing<T: Into<f64> + Copy>(xy: T, xz: T, yx: T, yz: T, zx: T, zy: T) -> Matrix {
+    let mut s = Matrix::identity(4, 4);
+
+    s[(0, 1)] = xy.into();
+    s[(0, 2)] = xz.into();
+    s[(1, 0)] = yx.into();
+    s[(1, 2)] = yz.into();
+    s[(2, 0)] = zx.into();
+    s[(2, 1)] = zy.into();
+
+    s
+}
+
 #[cfg(test)]
 mod tests {
     use std::f64::consts::PI;
@@ -163,5 +176,81 @@ mod tests {
             Point::new(-(2.0f64.sqrt() / 2.0), 2.0f64.sqrt() / 2.0, 0.0)
         );
         assert_eq!(&full_quarter * p, Point::new(-1, 0, 0));
+    }
+
+    #[test]
+    fn shearing_xy() {
+        let transform = shearing(1, 0, 0, 0, 0, 0);
+        let p = Point::new(2, 3, 4);
+        let expected = Point::new(5, 3, 4);
+        assert_eq!(&transform * p, expected);
+    }
+
+    #[test]
+    fn shearing_xz() {
+        let transform = shearing(0, 1, 0, 0, 0, 0);
+        let p = Point::new(2, 3, 4);
+        let expected = Point::new(6, 3, 4);
+        assert_eq!(&transform * p, expected);
+    }
+
+    #[test]
+    fn shearing_yx() {
+        let transform = shearing(0, 0, 1, 0, 0, 0);
+        let p = Point::new(2, 3, 4);
+        let expected = Point::new(2, 5, 4);
+        assert_eq!(&transform * p, expected);
+    }
+
+    #[test]
+    fn shearing_yz() {
+        let transform = shearing(0, 0, 0, 1, 0, 0);
+        let p = Point::new(2, 3, 4);
+        let expected = Point::new(2, 7, 4);
+        assert_eq!(&transform * p, expected);
+    }
+
+    #[test]
+    fn shearing_zx() {
+        let transform = shearing(0, 0, 0, 0, 1, 0);
+        let p = Point::new(2, 3, 4);
+        let expected = Point::new(2, 3, 6);
+        assert_eq!(&transform * p, expected);
+    }
+
+    #[test]
+    fn shearing_zy() {
+        let transform = shearing(0, 0, 0, 0, 0, 1);
+        let p = Point::new(2, 3, 4);
+        let expected = Point::new(2, 3, 7);
+        assert_eq!(&transform * p, expected);
+    }
+
+    #[test]
+    fn indvidual_transformations_sequence() {
+        let p = Point::new(1, 0, 1);
+        let a = rotation_x(PI / 2.0);
+        let b = scaling(5, 5, 5);
+        let c = translation(10, 5, 7);
+
+        let p2 = &a * p;
+        assert_eq!(p2, Point::new(1, -1, 0));
+
+        let p3 = &b * p2;
+        assert_eq!(p3, Point::new(5, -5, 0));
+
+        let p4 = &c * p3;
+        assert_eq!(p4, Point::new(15, 0, 7));
+    }
+
+    #[test]
+    fn chained_transformations_reverse_order() {
+        let p = Point::new(1, 0, 1);
+        let a = rotation_x(PI / 2.0);
+        let b = scaling(5, 5, 5);
+        let c = translation(10, 5, 7);
+
+        let t = &(&c * &b) * &a;
+        assert_eq!(&t * p, Point::new(15, 0, 7));
     }
 }
