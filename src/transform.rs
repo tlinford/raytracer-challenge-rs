@@ -244,6 +244,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::clippy::many_single_char_names)]
     fn chained_transformations_reverse_order() {
         let p = Point::new(1, 0, 1);
         let a = rotation_x(PI / 2.0);

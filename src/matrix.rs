@@ -3,7 +3,11 @@ use std::{
     vec,
 };
 
-use crate::{point::Point, vector::Vector};
+use crate::{
+    point::Point,
+    transform::{rotation_x, rotation_y, rotation_z, scaling, shearing, translation},
+    vector::Vector,
+};
 
 #[derive(Debug)]
 pub struct Matrix {
@@ -147,6 +151,36 @@ impl Matrix {
 
         inv
     }
+
+    pub fn translate<T: Into<f64> + Copy>(&self, x: T, y: T, z: T) -> Self {
+        let t = translation(x, y, z);
+        &t * self
+    }
+
+    pub fn scale<T: Into<f64> + Copy>(&self, x: T, y: T, z: T) -> Self {
+        let s = scaling(x, y, z);
+        &s * self
+    }
+
+    pub fn rotate_x(&self, radians: f64) -> Matrix {
+        let r = rotation_x(radians);
+        &r * self
+    }
+
+    pub fn rotate_y(&self, radians: f64) -> Matrix {
+        let r = rotation_y(radians);
+        &r * self
+    }
+
+    pub fn rotate_z(&self, radians: f64) -> Matrix {
+        let r = rotation_z(radians);
+        &r * self
+    }
+
+    pub fn shear<T: Into<f64> + Copy>(&self, xy: T, xz: T, yx: T, yz: T, zx: T, zy: T) -> Self {
+        let s = shearing(xy, xz, yx, yz, zx, zy);
+        &s * self
+    }
 }
 
 impl Index<(usize, usize)> for Matrix {
@@ -227,6 +261,8 @@ impl Mul<Vector> for &Matrix {
 
 #[cfg(test)]
 mod tests {
+    use std::f64::consts::PI;
+
     use super::*;
 
     #[should_panic]
@@ -618,5 +654,15 @@ mod tests {
         );
         let c = &a * &b;
         assert_eq!(&c * &b.inverse(), a);
+    }
+
+    #[test]
+    fn transformations_fluent_api_chaining() {
+        let p = Point::new(1, 0, 1);
+        let t = Matrix::identity(4, 4)
+            .rotate_x(PI / 2.0)
+            .scale(5, 5, 5)
+            .translate(10, 5, 7);
+        assert_eq!(&t * p, Point::new(15, 0, 7));
     }
 }
