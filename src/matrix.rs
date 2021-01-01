@@ -9,7 +9,7 @@ use crate::{
     vector::Vector,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Matrix {
     rows: usize,
     columns: usize,

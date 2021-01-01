@@ -1,8 +1,10 @@
 pub mod canvas;
 pub mod color;
+pub mod geometry;
 pub mod matrix;
 pub mod point;
 pub mod ppm;
+pub mod ray;
 pub mod transform;
 pub mod vector;
 

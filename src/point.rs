@@ -17,6 +17,10 @@ impl Point {
             z: z.into(),
         }
     }
+
+    pub fn origin() -> Self {
+        Self::new(0, 0, 0)
+    }
 }
 
 impl PartialEq for Point {
