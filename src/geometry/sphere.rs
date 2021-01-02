@@ -1,4 +1,5 @@
 use crate::{
+    material::Material,
     matrix::Matrix,
     point::Point,
     ray::Ray,
@@ -10,6 +11,7 @@ use super::intersection::{intersections, Intersection};
 #[derive(Debug, PartialEq)]
 pub struct Sphere {
     transform: Matrix,
+    material: Material,
 }
 
 impl Sphere {
@@ -46,12 +48,21 @@ impl Sphere {
         let world_normal = &self.transform.inverse().transpose() * object_normal;
         world_normal.normalize()
     }
+
+    pub fn material(&self) -> &Material {
+        &self.material
+    }
+
+    pub fn set_material(&mut self, material: Material) {
+        self.material = material;
+    }
 }
 
 impl Default for Sphere {
     fn default() -> Self {
         Self {
             transform: Matrix::identity(4, 4),
+            material: Material::default(),
         }
     }
 }
@@ -216,5 +227,20 @@ mod tests {
         s.set_transform(&m);
         let n = s.normal_at(Point::new(0.0, 2.0f64.sqrt() / 2.0, -(2.0f64.sqrt() / 2.0)));
         assert_eq!(n, Vector::new(0.0, 0.97014, -0.24254));
+    }
+
+    #[test]
+    fn sphere_default_material() {
+        let s = Sphere::default();
+        assert_eq!(s.material, Material::default());
+    }
+
+    #[test]
+    fn sphere_assign_material() {
+        let mut s = Sphere::default();
+        let mut m = Material::default();
+        m.ambient = 1.0;
+        s.set_material(m);
+        assert_eq!(s.material, m);
     }
 }

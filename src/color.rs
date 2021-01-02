@@ -11,6 +11,10 @@ impl Color {
     pub fn new(red: f64, green: f64, blue: f64) -> Self {
         Self { red, green, blue }
     }
+
+    pub fn black() -> Self {
+        Self::new(0.0, 0.0, 0.0)
+    }
 }
 
 impl PartialEq for Color {
@@ -21,7 +25,7 @@ impl PartialEq for Color {
     }
 }
 
-impl Add for Color {
+impl Add<Color> for Color {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
@@ -33,7 +37,7 @@ impl Add for Color {
     }
 }
 
-impl Sub for Color {
+impl Sub<Color> for Color {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
@@ -61,7 +65,7 @@ impl Mul<Color> for f64 {
     }
 }
 
-impl Mul for Color {
+impl Mul<Color> for Color {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
