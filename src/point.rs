@@ -39,7 +39,7 @@ impl Add<Vector> for Point {
     }
 }
 
-impl Sub for Point {
+impl Sub<Point> for Point {
     type Output = Vector;
 
     fn sub(self, other: Self) -> Vector {

@@ -36,7 +36,7 @@ impl PartialEq for Vector {
     }
 }
 
-impl Add for Vector {
+impl Add<Vector> for Vector {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
@@ -52,7 +52,7 @@ impl Add<Point> for Vector {
     }
 }
 
-impl Sub for Vector {
+impl Sub<Vector> for Vector {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
