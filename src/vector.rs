@@ -26,6 +26,10 @@ impl Vector {
         let magnitude = self.magnitude();
         Self::new(self.x / magnitude, self.y / magnitude, self.z / magnitude)
     }
+
+    pub fn reflect(&self, normal: Vector) -> Vector {
+        *self - normal * 2.0 * dot(*self, normal)
+    }
 }
 
 impl PartialEq for Vector {
@@ -227,5 +231,21 @@ mod tests {
         let expected2 = Vector::new(1.0, -2.0, 1.0);
         assert_eq!(cross(a, b), expected1);
         assert_eq!(cross(b, a), expected2);
+    }
+
+    #[test]
+    fn reflect_vector_at_45deg() {
+        let v = Vector::new(1, -1, 0);
+        let n = Vector::new(0, 1, 0);
+        let r = v.reflect(n);
+        assert_eq!(r, Vector::new(1, 1, 0));
+    }
+
+    #[test]
+    fn reflect_vector_slanted_surface() {
+        let v = Vector::new(0, -1, 0);
+        let n = Vector::new(2.0f64.sqrt() / 2.0, 2.0f64.sqrt() / 2.0, 0.0);
+        let r = v.reflect(n);
+        assert_eq!(r, Vector::new(1, 0, 0));
     }
 }
