@@ -11,7 +11,7 @@ use super::intersection::{intersections, Intersection};
 #[derive(Debug, PartialEq)]
 pub struct Sphere {
     transform: Matrix,
-    material: Material,
+    pub material: Material,
 }
 
 impl Sphere {
@@ -47,10 +47,6 @@ impl Sphere {
         let object_normal = object_point - Point::origin();
         let world_normal = &self.transform.inverse().transpose() * object_normal;
         world_normal.normalize()
-    }
-
-    pub fn material(&self) -> &Material {
-        &self.material
     }
 
     pub fn set_material(&mut self, material: Material) {

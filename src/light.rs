@@ -1,5 +1,6 @@
 use crate::{color::Color, point::Point};
 
+#[derive(Debug, PartialEq)]
 pub struct PointLight {
     intensity: Color,
     position: Point,
