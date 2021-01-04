@@ -1,4 +1,7 @@
-use std::ops::{Add, Mul, Sub};
+use std::{
+    iter::Sum,
+    ops::{Add, Mul, Sub},
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Color {
@@ -74,6 +77,17 @@ impl Mul<Color> for Color {
             self.green * other.green,
             self.blue * other.blue,
         )
+    }
+}
+
+impl Sum<Self> for Color {
+    fn sum<I>(iter: I) -> Self
+    where
+        I: Iterator<Item = Self>,
+    {
+        iter.fold(Self::new(0.0, 0.0, 0.0), |a, b| {
+            Self::new(a.red + b.red, a.green + b.green, a.blue + b.blue)
+        })
     }
 }
 

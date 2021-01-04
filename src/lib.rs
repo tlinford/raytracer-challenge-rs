@@ -9,6 +9,7 @@ pub mod ppm;
 pub mod ray;
 pub mod transform;
 pub mod vector;
+pub mod world;
 
 const EPSILON: f64 = 0.00001;
 
