@@ -56,6 +56,14 @@ impl World {
             }
         }
     }
+
+    pub fn add_light(&mut self, light: PointLight) {
+        self.lights.push(light);
+    }
+
+    pub fn add_object(&mut self, object: Sphere) {
+        self.objects.push(object);
+    }
 }
 
 impl Default for World {

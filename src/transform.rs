@@ -1,4 +1,8 @@
-use crate::matrix::Matrix;
+use crate::{
+    matrix::Matrix,
+    point::Point,
+    vector::{cross, Vector},
+};
 
 pub fn translation<T: Into<f64> + Copy>(x: T, y: T, z: T) -> Matrix {
     let mut t = Matrix::identity(4, 4);
@@ -64,6 +68,25 @@ pub fn shearing<T: Into<f64> + Copy>(xy: T, xz: T, yx: T, yz: T, zx: T, zy: T) -
     s[(2, 1)] = zy.into();
 
     s
+}
+
+pub fn view_transform(from: Point, to: Point, up: Vector) -> Matrix {
+    let forward = (to - from).normalize();
+    let upn = up.normalize();
+    let left = cross(forward, upn);
+    let true_up = cross(left, forward);
+    let orientation = Matrix::from_rows(
+        4,
+        4,
+        &[
+            &[left.x, left.y, left.z, 0.0],
+            &[true_up.x, true_up.y, true_up.z, 0.0],
+            &[-forward.x, -forward.y, -forward.z, 0.0],
+            &[0.0, 0.0, 0.0, 1.0],
+        ],
+    );
+
+    &orientation * &translation(-from.x, -from.y, -from.z)
 }
 
 #[cfg(test)]
@@ -253,5 +276,51 @@ mod tests {
 
         let t = &(&c * &b) * &a;
         assert_eq!(&t * p, Point::new(15, 0, 7));
+    }
+
+    #[test]
+    fn transformation_matrix_default_orientation() {
+        let from = Point::new(0, 0, 0);
+        let to = Point::new(0, 0, -1);
+        let up = Vector::new(0, 1, 0);
+        let t = view_transform(from, to, up);
+        assert_eq!(t, Matrix::identity(4, 4));
+    }
+
+    #[test]
+    fn view_transformation_positive_z() {
+        let from = Point::new(0, 0, 0);
+        let to = Point::new(0, 0, 1);
+        let up = Vector::new(0, 1, 0);
+        let t = view_transform(from, to, up);
+        assert_eq!(t, scaling(-1, 1, -1));
+    }
+
+    #[test]
+    fn view_transformation_moves_world() {
+        let from = Point::new(0, 0, 8);
+        let to = Point::new(0, 0, 0);
+        let up = Vector::new(0, 1, 0);
+        let t = view_transform(from, to, up);
+        assert_eq!(t, translation(0, 0, -8));
+    }
+
+    #[test]
+    fn arbitrary_view_transformation() {
+        let from = Point::new(1, 3, 2);
+        let to = Point::new(4, -2, 8);
+        let up = Vector::new(1, 1, 0);
+        let t = view_transform(from, to, up);
+        let expected = Matrix::from_rows(
+            4,
+            4,
+            &[
+                &[-0.50709, 0.50709, 0.67612, -2.36643],
+                &[0.76772, 0.60609, 0.12122, -2.82843],
+                &[-0.35857, 0.59761, -0.71714, 0.0],
+                &[0.0, 0.0, 0.0, 1.0],
+            ],
+        );
+        assert_eq!(t, expected);
     }
 }

@@ -66,11 +66,11 @@ pub fn hit<'a>(xs: &'a [Intersection<'a>]) -> Option<&'a Intersection<'a>> {
 
 pub struct Computations<'a> {
     pub object: &'a Sphere,
-    t: f64,
+    pub t: f64,
     pub point: Point,
     pub eyev: Vector,
     pub normalv: Vector,
-    inside: bool,
+    pub inside: bool,
 }
 
 #[cfg(test)]
