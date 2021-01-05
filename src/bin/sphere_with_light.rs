@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let color = hit
                     .object()
                     .material
-                    .lighting(&light, &point, &eye, &normal);
+                    .lighting(&light, &point, &eye, &normal, false);
                 canvas.set_pixel(x, y, color);
             }
         }

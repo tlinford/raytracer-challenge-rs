@@ -2,6 +2,7 @@ use crate::{
     point::Point,
     ray::Ray,
     vector::{dot, Vector},
+    EPSILON,
 };
 
 use super::sphere::Sphere;
@@ -39,6 +40,7 @@ impl<'a> Intersection<'a> {
             object: self.object,
             t: self.t,
             point,
+            over_point: point + normalv * EPSILON,
             eyev,
             normalv,
             inside,
@@ -68,6 +70,7 @@ pub struct Computations<'a> {
     pub object: &'a Sphere,
     pub t: f64,
     pub point: Point,
+    pub over_point: Point,
     pub eyev: Vector,
     pub normalv: Vector,
     pub inside: bool,
@@ -77,7 +80,7 @@ pub struct Computations<'a> {
 mod tests {
     use std::ptr;
 
-    use crate::equal;
+    use crate::{equal, transform::translation, EPSILON};
 
     use super::*;
     #[test]
@@ -174,5 +177,16 @@ mod tests {
         assert_eq!(comps.eyev, Vector::new(0, 0, -1));
         assert_eq!(comps.inside, true);
         assert_eq!(comps.normalv, Vector::new(0, 0, -1));
+    }
+
+    #[test]
+    fn hit_should_offset_point() {
+        let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
+        let mut shape = Sphere::default();
+        shape.set_transform(&translation(0, 0, 1));
+        let i = Intersection::new(5.0, &shape);
+        let comps = i.prepare_computations(&r);
+        assert!(comps.over_point.z < -EPSILON / 2.0);
+        assert!(comps.point.z > comps.over_point.z);
     }
 }
