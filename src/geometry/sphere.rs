@@ -48,10 +48,6 @@ impl Sphere {
         let world_normal = &self.transform.inverse().transpose() * object_normal;
         world_normal.normalize()
     }
-
-    pub fn set_material(&mut self, material: Material) {
-        self.material = material;
-    }
 }
 
 impl Default for Sphere {
@@ -236,7 +232,7 @@ mod tests {
         let mut s = Sphere::default();
         let mut m = Material::default();
         m.ambient = 1.0;
-        s.set_material(m);
+        s.material = m;
         assert_eq!(s.material, m);
     }
 }
