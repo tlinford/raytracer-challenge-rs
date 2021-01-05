@@ -5,16 +5,16 @@ use crate::{
     EPSILON,
 };
 
-use super::sphere::Sphere;
+use super::shape::Shape;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Intersection<'a> {
     t: f64,
-    object: &'a Sphere,
+    object: &'a Shape,
 }
 
 impl<'a> Intersection<'a> {
-    pub fn new(t: f64, object: &'a Sphere) -> Self {
+    pub fn new(t: f64, object: &'a Shape) -> Self {
         Self { t, object }
     }
 
@@ -22,7 +22,7 @@ impl<'a> Intersection<'a> {
         self.t
     }
 
-    pub fn object(&self) -> &Sphere {
+    pub fn object(&self) -> &Shape {
         self.object
     }
 
@@ -67,7 +67,7 @@ pub fn hit<'a>(xs: &'a [Intersection<'a>]) -> Option<&'a Intersection<'a>> {
 // }
 
 pub struct Computations<'a> {
-    pub object: &'a Sphere,
+    pub object: &'a Shape,
     pub t: f64,
     pub point: Point,
     pub over_point: Point,
@@ -80,12 +80,12 @@ pub struct Computations<'a> {
 mod tests {
     use std::ptr;
 
-    use crate::{equal, transform::translation, EPSILON};
+    use crate::{equal, geometry::shape::sphere, transform::translation, EPSILON};
 
     use super::*;
     #[test]
     fn create_intersection() {
-        let s = Sphere::default();
+        let s = sphere();
         let i = Intersection::new(3.5, &s);
         assert!(crate::equal(i.t, 3.5));
         assert!(ptr::eq(i.object, &s));
@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     fn aggregate_intersections() {
-        let s = Sphere::default();
+        let s = sphere();
         let i1 = Intersection::new(1.0, &s);
         let i2 = Intersection::new(2.0, &s);
         let xs = intersections(&[i1, i2]);
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn hit_all_intersections_positive_t() {
-        let s = Sphere::default();
+        let s = sphere();
         let i1 = Intersection::new(1.0, &s);
         let i2 = Intersection::new(2.0, &s);
         let xs = intersections(&[i1, i2]);
@@ -114,7 +114,7 @@ mod tests {
 
     #[test]
     fn hit_some_intersections_negative_t() {
-        let s = Sphere::default();
+        let s = sphere();
         let i1 = Intersection::new(-1.0, &s);
         let i2 = Intersection::new(1.0, &s);
         let xs = intersections(&[i1, i2]);
@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn hit_all_intersections_negative_t() {
-        let s = Sphere::default();
+        let s = sphere();
         let i1 = Intersection::new(-2.0, &s);
         let i2 = Intersection::new(-1.0, &s);
         let xs = intersections(&[i1, i2]);
@@ -134,7 +134,7 @@ mod tests {
 
     #[test]
     fn hit_is_always_nonnegative_intersection() {
-        let s = Sphere::default();
+        let s = sphere();
         let i1 = Intersection::new(5.0, &s);
         let i2 = Intersection::new(7.0, &s);
         let i3 = Intersection::new(-3.0, &s);
@@ -148,7 +148,7 @@ mod tests {
     #[test]
     fn precompute_intersection_state() {
         let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
-        let shape = Sphere::default();
+        let shape = sphere();
         let i = Intersection::new(4.0, &shape);
         let comps = i.prepare_computations(&r);
         assert!(equal(comps.t, i.t));
@@ -161,7 +161,7 @@ mod tests {
     #[test]
     fn precompute_intersection_hit_outside() {
         let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
-        let shape = Sphere::default();
+        let shape = sphere();
         let i = Intersection::new(4.0, &shape);
         let comps = i.prepare_computations(&r);
         assert_eq!(comps.inside, false);
@@ -170,7 +170,7 @@ mod tests {
     #[test]
     fn precompute_intersection_hit_inside() {
         let r = Ray::new(Point::new(0, 0, 0), Vector::new(0, 0, 1));
-        let shape = Sphere::default();
+        let shape = sphere();
         let i = Intersection::new(1.0, &shape);
         let comps = i.prepare_computations(&r);
         assert_eq!(comps.point, Point::new(0, 0, 1));
@@ -182,7 +182,7 @@ mod tests {
     #[test]
     fn hit_should_offset_point() {
         let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
-        let mut shape = Sphere::default();
+        let mut shape = sphere();
         shape.set_transform(&translation(0, 0, 1));
         let i = Intersection::new(5.0, &shape);
         let comps = i.prepare_computations(&r);

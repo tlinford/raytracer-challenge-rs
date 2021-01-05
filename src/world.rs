@@ -2,7 +2,8 @@ use crate::{
     color::Color,
     geometry::{
         intersection::{hit, intersections, Computations, Intersection},
-        sphere::Sphere,
+        shape::sphere,
+        shape::Shape,
     },
     light::PointLight,
     point::Point,
@@ -11,7 +12,7 @@ use crate::{
 };
 
 pub struct World {
-    objects: Vec<Sphere>,
+    objects: Vec<Shape>,
     lights: Vec<PointLight>,
 }
 
@@ -66,7 +67,7 @@ impl World {
         self.lights.push(light);
     }
 
-    pub fn add_object(&mut self, object: Sphere) {
+    pub fn add_object(&mut self, object: Shape) {
         self.objects.push(object);
     }
 
@@ -86,11 +87,11 @@ impl World {
 impl Default for World {
     fn default() -> Self {
         let light = PointLight::new(Point::new(-10, 10, -10), Color::new(1.0, 1.0, 1.0));
-        let mut s1 = Sphere::default();
+        let mut s1 = sphere();
         s1.material.color = Color::new(0.8, 1.0, 0.6);
         s1.material.diffuse = 0.7;
         s1.material.specular = 0.2;
-        let mut s2 = Sphere::default();
+        let mut s2 = sphere();
         s2.set_transform(&scaling(0.5, 0.5, 0.5));
 
         Self {
@@ -116,11 +117,11 @@ mod tests {
     #[test]
     fn create_default_world() {
         let light = PointLight::new(Point::new(-10, 10, -10), Color::new(1.0, 1.0, 1.0));
-        let mut s1 = Sphere::default();
+        let mut s1 = sphere();
         s1.material.color = Color::new(0.8, 1.0, 0.6);
         s1.material.diffuse = 0.7;
         s1.material.specular = 0.2;
-        let mut s2 = Sphere::default();
+        let mut s2 = sphere();
         s2.set_transform(&scaling(0.5, 0.5, 0.5));
 
         let w = World::default();
@@ -228,9 +229,9 @@ mod tests {
             Point::new(0, 0, -10),
             Color::new(1.0, 1.0, 1.0),
         ));
-        let s1 = Sphere::default();
+        let s1 = sphere();
         w.add_object(s1);
-        let mut s2 = Sphere::default();
+        let mut s2 = sphere();
         s2.set_transform(&translation(0, 0, 10));
         w.add_object(s2);
         let r = Ray::new(Point::new(0, 0, 5), Vector::new(0, 0, 1));

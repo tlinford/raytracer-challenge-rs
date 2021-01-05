@@ -3,7 +3,7 @@ use std::{error::Error, f64::consts::PI, path::Path};
 use raytracer::{
     canvas::Canvas,
     color::Color,
-    geometry::{intersection::hit, sphere::Sphere},
+    geometry::{intersection::hit, shape::sphere},
     light::PointLight,
     material::Material,
     matrix::Matrix,
@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut canvas = Canvas::new(canvas_pixels, canvas_pixels);
     // let color = Color::new(1.0, 0.0, 0.0);
-    let mut shape = Sphere::default();
+    let mut shape = sphere();
     let mut material = Material::default();
     material.color = Color::new(1.0, 0.2, 1.0);
     shape.material = material;

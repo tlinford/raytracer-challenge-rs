@@ -3,7 +3,7 @@ use std::{error::Error, f64::consts::PI, path::Path};
 use raytracer::{
     camera::Camera,
     color::Color,
-    geometry::sphere::Sphere,
+    geometry::shape::sphere,
     light::PointLight,
     matrix::Matrix,
     point::Point,
@@ -16,12 +16,12 @@ use raytracer::{
 fn main() -> Result<(), Box<dyn Error>> {
     println!("simple scene 1.0!");
 
-    let mut floor = Sphere::default();
+    let mut floor = sphere();
     floor.set_transform(&scaling(10.0, 0.01, 10.0));
     floor.material.color = Color::new(1.0, 0.9, 0.9);
     floor.material.specular = 0.0;
 
-    let mut left_wall = Sphere::default();
+    let mut left_wall = sphere();
 
     let left_wall_transform = Matrix::identity(4, 4)
         .scale(10.0, 0.01, 10.0)
@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     left_wall.set_transform(&left_wall_transform);
     left_wall.material = floor.material;
 
-    let mut right_wall = Sphere::default();
+    let mut right_wall = sphere();
 
     let right_wall_transform = Matrix::identity(4, 4)
         .scale(10.0, 0.01, 10.0)
@@ -43,19 +43,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     right_wall.set_transform(&right_wall_transform);
     right_wall.material = floor.material;
 
-    let mut middle = Sphere::default();
+    let mut middle = sphere();
     middle.set_transform(&translation(-0.5, 1.0, 0.5));
     middle.material.color = Color::new(0.1, 1.0, 0.5);
     middle.material.diffuse = 0.7;
     middle.material.specular = 0.3;
 
-    let mut right = Sphere::default();
+    let mut right = sphere();
     right.set_transform(&(&translation(1.5, 0.5, -0.5) * &scaling(0.5, 0.5, 0.5)));
     right.material.color = Color::new(0.5, 1.0, 0.1);
     right.material.diffuse = 0.7;
     right.material.specular = 0.3;
 
-    let mut left = Sphere::default();
+    let mut left = sphere();
     left.set_transform(&(&translation(-1.5, 0.33, -0.75) * &scaling(0.33, 0.33, 0.33)));
     left.material.color = Color::new(1.0, 0.8, 0.1);
     left.material.diffuse = 0.7;
