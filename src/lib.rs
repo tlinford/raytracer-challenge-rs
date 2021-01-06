@@ -5,6 +5,7 @@ pub mod geometry;
 pub mod light;
 pub mod material;
 pub mod matrix;
+pub mod pattern;
 pub mod point;
 pub mod ppm;
 pub mod ray;

@@ -78,6 +78,9 @@ mod tests {
         let mut m = Material::default();
         m.ambient = 1.0;
         s.material = m;
+
+        let mut m = Material::default();
+        m.ambient = 1.0;
         assert_eq!(s.material, m);
     }
 

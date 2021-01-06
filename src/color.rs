@@ -18,6 +18,10 @@ impl Color {
     pub fn black() -> Self {
         Self::new(0.0, 0.0, 0.0)
     }
+
+    pub fn white() -> Self {
+        Self::new(1.0, 1.0, 1.0)
+    }
 }
 
 impl PartialEq for Color {

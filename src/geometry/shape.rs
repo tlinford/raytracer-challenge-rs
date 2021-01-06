@@ -5,7 +5,7 @@ use super::{intersection::Intersection, plane::Plane, sphere::Sphere, test_shape
 #[derive(Debug, PartialEq)]
 pub struct Shape {
     pub transform: Matrix,
-    transform_inverse: Matrix,
+    pub transform_inverse: Matrix,
     transform_inverse_transpose: Matrix,
     pub material: Material,
     pub shape: Kind,

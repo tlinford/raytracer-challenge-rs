@@ -5,7 +5,9 @@ use raytracer::{
     color::Color,
     geometry::shape::{plane, sphere},
     light::PointLight,
+    material::Material,
     matrix::Matrix,
+    pattern::stripe::StripePattern,
     point::Point,
     ppm::save_ppm,
     transform::{scaling, translation, view_transform},
@@ -28,7 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .translate(0, 0, 5);
 
     left_wall.set_transform(&left_wall_transform);
-    left_wall.material = floor.material;
+    left_wall.material = floor.material.clone();
 
     let mut right_wall = plane();
 
@@ -38,7 +40,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         .translate(0, 0, 5);
 
     right_wall.set_transform(&right_wall_transform);
-    right_wall.material = floor.material;
+    right_wall.material = Material::default();
+    right_wall
+        .material
+        .set_pattern(StripePattern::new(Color::white(), Color::black()));
 
     let mut middle = sphere();
     middle.set_transform(&translation(-0.5, 1.0, 0.5));
