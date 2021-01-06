@@ -7,7 +7,7 @@ use raytracer::{
     light::PointLight,
     material::Material,
     matrix::Matrix,
-    pattern::stripe::StripePattern,
+    pattern::stripe_pattern,
     point::Point,
     ppm::save_ppm,
     transform::{scaling, translation, view_transform},
@@ -43,7 +43,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     right_wall.material = Material::default();
     right_wall
         .material
-        .set_pattern(StripePattern::new(Color::white(), Color::black()));
+        .set_pattern(stripe_pattern(Color::white(), Color::black()));
 
     let mut middle = sphere();
     middle.set_transform(&translation(-0.5, 1.0, 0.5));

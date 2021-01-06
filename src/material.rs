@@ -2,7 +2,7 @@ use crate::{
     color::Color,
     geometry::shape::Shape,
     light::PointLight,
-    pattern::stripe::StripePattern,
+    pattern::Pattern,
     point::Point,
     vector::{dot, Vector},
 };
@@ -14,7 +14,7 @@ pub struct Material {
     pub diffuse: f64,
     pub specular: f64,
     pub shininess: f64,
-    pattern: Option<StripePattern>,
+    pattern: Option<Pattern>,
 }
 
 impl Material {
@@ -39,7 +39,7 @@ impl Material {
         in_shadow: bool,
     ) -> Color {
         let color = if let Some(pattern) = &self.pattern {
-            pattern.color_at_object(object, *point)
+            pattern.color_at_shape(object, *point)
         } else {
             self.color
         };
@@ -75,14 +75,14 @@ impl Material {
         ambient + diffuse + specular
     }
 
-    pub fn set_pattern(&mut self, pattern: StripePattern) {
+    pub fn set_pattern(&mut self, pattern: Pattern) {
         self.pattern = Some(pattern);
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{equal, geometry::shape::sphere};
+    use crate::{equal, geometry::shape::sphere, pattern::stripe_pattern};
 
     use super::*;
 
@@ -166,7 +166,7 @@ mod tests {
     #[test]
     fn lighting_with_pattern() {
         let mut m = Material::default();
-        m.set_pattern(StripePattern::new(Color::white(), Color::black()));
+        m.set_pattern(stripe_pattern(Color::white(), Color::black()));
         m.ambient = 1.0;
         m.diffuse = 0.0;
         m.specular = 0.0;

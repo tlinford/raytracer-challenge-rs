@@ -1,21 +1,14 @@
-use crate::{color::Color, geometry::shape::Shape, matrix::Matrix, point::Point};
+use crate::{color::Color, point::Point};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct StripePattern {
     a: Color,
     b: Color,
-    transform: Matrix,
-    transform_inverse: Matrix,
 }
 
 impl StripePattern {
     pub fn new(a: Color, b: Color) -> Self {
-        Self {
-            a,
-            b,
-            transform: Matrix::identity(4, 4),
-            transform_inverse: Matrix::identity(4, 4),
-        }
+        Self { a, b }
     }
 
     pub fn color_at(&self, point: Point) -> Color {
@@ -25,23 +18,13 @@ impl StripePattern {
             self.b
         }
     }
-
-    pub fn color_at_object(&self, object: &Shape, world_point: Point) -> Color {
-        let object_point = &object.transform_inverse * world_point;
-        let pattern_point = &self.transform_inverse * object_point;
-        self.color_at(pattern_point)
-    }
-
-    pub fn set_transform(&mut self, transform: Matrix) {
-        self.transform = transform;
-        self.transform_inverse = self.transform.inverse();
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{
         geometry::shape::sphere,
+        pattern::stripe_pattern,
         transform::{scaling, translation},
     };
 
@@ -100,9 +83,9 @@ mod tests {
 
         let black = Color::black();
         let white = Color::white();
-        let pattern = StripePattern::new(white, black);
+        let pattern = stripe_pattern(white, black);
 
-        let c = pattern.color_at_object(&object, Point::new(1.5, 0.0, 0.0));
+        let c = pattern.color_at_shape(&object, Point::new(1.5, 0.0, 0.0));
         assert_eq!(c, white);
     }
 
@@ -112,10 +95,10 @@ mod tests {
 
         let black = Color::black();
         let white = Color::white();
-        let mut pattern = StripePattern::new(white, black);
+        let mut pattern = stripe_pattern(white, black);
         pattern.set_transform(scaling(2, 2, 2));
 
-        let c = pattern.color_at_object(&object, Point::new(1.5, 0.0, 0.0));
+        let c = pattern.color_at_shape(&object, Point::new(1.5, 0.0, 0.0));
         assert_eq!(c, white);
     }
 
@@ -126,10 +109,10 @@ mod tests {
 
         let black = Color::black();
         let white = Color::white();
-        let mut pattern = StripePattern::new(white, black);
+        let mut pattern = stripe_pattern(white, black);
         pattern.set_transform(translation(0.5, 0.0, 0.0));
 
-        let c = pattern.color_at_object(&object, Point::new(2.5, 0.0, 0.0));
+        let c = pattern.color_at_shape(&object, Point::new(2.5, 0.0, 0.0));
         assert_eq!(c, white);
     }
 }
