@@ -1,6 +1,6 @@
 use crate::{material::Material, matrix::Matrix, point::Point, ray::Ray, vector::Vector};
 
-use super::{intersection::Intersection, sphere::Sphere, test_shape::TestShape};
+use super::{intersection::Intersection, plane::Plane, sphere::Sphere, test_shape::TestShape};
 
 #[derive(Debug, PartialEq)]
 pub struct Shape {
@@ -17,6 +17,7 @@ impl Shape {
         let xs = match &self.shape {
             Kind::TestShape(test_shape) => test_shape.local_intersect(&local_ray),
             Kind::Sphere(sphere) => sphere.local_intersect(&local_ray),
+            Kind::Plane(plane) => plane.local_intersect(&local_ray),
         };
         xs.iter().map(|&x| Intersection::new(x, &self)).collect()
     }
@@ -26,6 +27,7 @@ impl Shape {
         let local_normal = match &self.shape {
             Kind::TestShape(test_shape) => test_shape.local_normal_at(local_point),
             Kind::Sphere(sphere) => sphere.local_normal_at(local_point),
+            Kind::Plane(plane) => plane.local_normal_at(local_point),
         };
         let world_normal = &self.transform_inverse_transpose * local_normal;
         world_normal.normalize()
@@ -61,11 +63,19 @@ impl Default for Shape {
 pub enum Kind {
     TestShape(TestShape),
     Sphere(Sphere),
+    Plane(Plane),
 }
 
 pub fn sphere() -> Shape {
     Shape {
         shape: Kind::Sphere(Sphere {}),
+        ..Default::default()
+    }
+}
+
+pub fn plane() -> Shape {
+    Shape {
+        shape: Kind::Plane(Plane {}),
         ..Default::default()
     }
 }

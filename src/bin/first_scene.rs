@@ -3,7 +3,7 @@ use std::{error::Error, f64::consts::PI, path::Path};
 use raytracer::{
     camera::Camera,
     color::Color,
-    geometry::shape::sphere,
+    geometry::shape::{plane, sphere},
     light::PointLight,
     matrix::Matrix,
     point::Point,
@@ -16,15 +16,13 @@ use raytracer::{
 fn main() -> Result<(), Box<dyn Error>> {
     println!("simple scene 1.0!");
 
-    let mut floor = sphere();
-    floor.set_transform(&scaling(10.0, 0.01, 10.0));
+    let mut floor = plane();
     floor.material.color = Color::new(1.0, 0.9, 0.9);
     floor.material.specular = 0.0;
 
-    let mut left_wall = sphere();
+    let mut left_wall = plane();
 
     let left_wall_transform = Matrix::identity(4, 4)
-        .scale(10.0, 0.01, 10.0)
         .rotate_x(PI / 2.0)
         .rotate_y(-PI / 4.0)
         .translate(0, 0, 5);
@@ -32,10 +30,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     left_wall.set_transform(&left_wall_transform);
     left_wall.material = floor.material;
 
-    let mut right_wall = sphere();
+    let mut right_wall = plane();
 
     let right_wall_transform = Matrix::identity(4, 4)
-        .scale(10.0, 0.01, 10.0)
         .rotate_x(PI / 2.0)
         .rotate_y(PI / 4.0)
         .translate(0, 0, 5);
