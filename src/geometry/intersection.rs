@@ -44,6 +44,7 @@ impl<'a> Intersection<'a> {
             eyev,
             normalv,
             inside,
+            reflectv: ray.direction().reflect(normalv),
         }
     }
 }
@@ -74,13 +75,19 @@ pub struct Computations<'a> {
     pub eyev: Vector,
     pub normalv: Vector,
     pub inside: bool,
+    pub reflectv: Vector,
 }
 
 #[cfg(test)]
 mod tests {
     use std::ptr;
 
-    use crate::{equal, geometry::shape::sphere, transform::translation, EPSILON};
+    use crate::{
+        equal,
+        geometry::shape::{plane, sphere},
+        transform::translation,
+        EPSILON,
+    };
 
     use super::*;
     #[test]
@@ -188,5 +195,20 @@ mod tests {
         let comps = i.prepare_computations(&r);
         assert!(comps.over_point.z < -EPSILON / 2.0);
         assert!(comps.point.z > comps.over_point.z);
+    }
+
+    #[test]
+    fn precompute_reflection_vector() {
+        let shape = plane();
+        let r = Ray::new(
+            Point::new(0, 1, -1),
+            Vector::new(0.0, -(2f64.sqrt() / 2.0), 2f64.sqrt() / 2.0),
+        );
+        let i = Intersection::new(2.0f64.sqrt(), &shape);
+        let comps = i.prepare_computations(&r);
+        assert_eq!(
+            comps.reflectv,
+            Vector::new(0.0, 2f64.sqrt() / 2.0, 2f64.sqrt() / 2.0)
+        );
     }
 }

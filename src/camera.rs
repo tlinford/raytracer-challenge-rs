@@ -1,4 +1,10 @@
-use crate::{canvas::Canvas, matrix::Matrix, point::Point, ray::Ray, world::World};
+use crate::{
+    canvas::Canvas,
+    matrix::Matrix,
+    point::Point,
+    ray::Ray,
+    world::{World, MAX_RECURSION_DEPTH},
+};
 
 pub struct Camera {
     hsize: usize,
@@ -63,7 +69,7 @@ impl Camera {
             }
             for x in 0..self.hsize {
                 let ray = self.ray_for_pixel(x, y);
-                let color = world.color_at(&ray);
+                let color = world.color_at(&ray, MAX_RECURSION_DEPTH);
                 image.set_pixel(x, y, color);
             }
         }
