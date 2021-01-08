@@ -89,9 +89,7 @@ impl Sum<Self> for Color {
     where
         I: Iterator<Item = Self>,
     {
-        iter.fold(Self::new(0.0, 0.0, 0.0), |a, b| {
-            Self::new(a.red + b.red, a.green + b.green, a.blue + b.blue)
-        })
+        iter.fold(Self::new(0.0, 0.0, 0.0), |a, b| a + b)
     }
 }
 

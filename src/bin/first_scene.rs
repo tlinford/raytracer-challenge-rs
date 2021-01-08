@@ -7,7 +7,7 @@ use raytracer::{
     light::PointLight,
     material::Material,
     matrix::Matrix,
-    pattern::stripe_pattern,
+    pattern::{checkers_pattern, ring_pattern, stripe_pattern},
     point::Point,
     ppm::save_ppm,
     transform::{scaling, translation, view_transform},
@@ -19,9 +19,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("simple scene 1.0!");
 
     let mut floor = plane();
-    floor.material.color = Color::new(1.0, 0.9, 0.9);
-    floor.material.specular = 0.0;
-
+    floor.material.set_pattern(checkers_pattern(
+        Color::new(0.0, 0.5, 0.5),
+        Color::new(0.5, 0.0, 0.5),
+    ));
     let mut left_wall = plane();
 
     let left_wall_transform = Matrix::identity(4, 4)
@@ -30,7 +31,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         .translate(0, 0, 5);
 
     left_wall.set_transform(&left_wall_transform);
-    left_wall.material = floor.material.clone();
+    let mut left_wall_pattern = ring_pattern(Color::new(0.0, 0.0, 1.0), Color::new(0.0, 1.0, 1.0));
+    left_wall_pattern.set_transform(scaling(0.333, 0.333, 0.333));
+    left_wall.material.set_pattern(left_wall_pattern);
 
     let mut right_wall = plane();
 
@@ -53,9 +56,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut right = sphere();
     right.set_transform(&(&translation(1.5, 0.5, -0.5) * &scaling(0.5, 0.5, 0.5)));
-    right.material.color = Color::new(0.5, 1.0, 0.1);
-    right.material.diffuse = 0.7;
-    right.material.specular = 0.3;
+    right.material.set_pattern(checkers_pattern(
+        Color::new(1.0, 0.0, 0.0),
+        Color::new(0.0, 1.0, 0.0),
+    ));
 
     let mut left = sphere();
     left.set_transform(&(&translation(-1.5, 0.33, -0.75) * &scaling(0.33, 0.33, 0.33)));
@@ -64,8 +68,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     left.material.specular = 0.3;
 
     let mut world = World::new();
-    let light_source = PointLight::new(Point::new(-10, 10, -10), Color::new(1.0, 1.0, 1.0));
-    world.add_light(light_source);
+    let light_source1 = PointLight::new(Point::new(-10, 10, -10), Color::new(1.0, 1.0, 1.0));
+    let light_source2 = PointLight::new(Point::new(-5.0, 10.0, -6.0), Color::new(0.33, 0.33, 0.33));
+    world.add_light(light_source1);
+    world.add_light(light_source2);
 
     world.add_object(floor);
     world.add_object(left_wall);

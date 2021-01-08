@@ -42,7 +42,7 @@ impl World {
                 comps.object.material.lighting(
                     comps.object,
                     light,
-                    &comps.point,
+                    &comps.over_point,
                     &comps.eyev,
                     &comps.normalv,
                     shadowed,
