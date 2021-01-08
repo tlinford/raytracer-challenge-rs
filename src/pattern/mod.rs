@@ -58,7 +58,7 @@ enum Kind {
     Checkers(CheckersPattern),
 }
 
-fn _test_pattern() -> Pattern {
+pub fn test_pattern() -> Pattern {
     Pattern::default()
 }
 

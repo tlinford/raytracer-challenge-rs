@@ -73,6 +73,14 @@ pub fn sphere() -> Shape {
     }
 }
 
+pub fn glass_sphere() -> Shape {
+    let mut sphere = sphere();
+    sphere.material.transparency = 1.0;
+    sphere.material.refractive_index = 1.5;
+
+    sphere
+}
+
 pub fn plane() -> Shape {
     Shape {
         shape: Kind::Plane(Plane {}),

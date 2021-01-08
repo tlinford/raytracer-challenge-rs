@@ -3,7 +3,7 @@ use std::{error::Error, f64::consts::PI, path::Path};
 use raytracer::{
     camera::Camera,
     color::Color,
-    geometry::shape::{plane, sphere},
+    geometry::shape::{glass_sphere, plane, sphere},
     light::PointLight,
     material::Material,
     matrix::Matrix,
@@ -62,11 +62,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         Color::new(0.0, 1.0, 0.0),
     ));
 
-    let mut left = sphere();
+    let mut left = glass_sphere();
+    left.material.color = Color::new(0.1, 0.0, 0.0);
+    left.material.ambient = 0.1;
+    left.material.diffuse = 0.05;
+    left.material.reflective = 0.3;
+    left.material.specular = 1.0;
+    left.material.shininess = 300.0;
     left.set_transform(&(&translation(-1.5, 0.33, -0.75) * &scaling(0.33, 0.33, 0.33)));
-    left.material.color = Color::new(1.0, 0.8, 0.1);
-    left.material.diffuse = 0.7;
-    left.material.specular = 0.3;
 
     let mut world = World::new();
     let light_source1 = PointLight::new(Point::new(-10, 10, -10), Color::new(1.0, 1.0, 1.0));

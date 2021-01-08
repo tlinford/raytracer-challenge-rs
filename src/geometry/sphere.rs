@@ -35,7 +35,9 @@ mod tests {
     use std::{f32::consts::FRAC_1_SQRT_2, f64::consts::PI};
 
     use crate::{
-        geometry::shape::sphere,
+        equal,
+        geometry::shape::{glass_sphere, sphere},
+        matrix::Matrix,
         transform::{rotation_z, scaling, translation},
         vector::Vector,
     };
@@ -177,5 +179,13 @@ mod tests {
         s.set_transform(&m);
         let n = s.normal_at(Point::new(0.0, 2.0f64.sqrt() / 2.0, -(2.0f64.sqrt() / 2.0)));
         assert_eq!(n, Vector::new(0.0, 0.97014, -0.24254));
+    }
+
+    #[test]
+    fn create_glass_sphere() {
+        let s = glass_sphere();
+        assert_eq!(s.transform, Matrix::identity(4, 4));
+        assert!(equal(s.material.transparency, 1.0));
+        assert!(equal(s.material.refractive_index, 1.5));
     }
 }
