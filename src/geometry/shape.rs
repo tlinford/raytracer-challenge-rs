@@ -1,7 +1,8 @@
 use crate::{material::Material, matrix::Matrix, point::Point, ray::Ray, vector::Vector};
 
 use super::{
-    cube::Cube, intersection::Intersection, plane::Plane, sphere::Sphere, test_shape::TestShape,
+    cube::Cube, cylinder::Cylinder, intersection::Intersection, plane::Plane, sphere::Sphere,
+    test_shape::TestShape,
 };
 
 #[derive(Debug, PartialEq)]
@@ -21,6 +22,7 @@ impl Shape {
             Kind::Sphere(sphere) => sphere.local_intersect(&local_ray),
             Kind::Plane(plane) => plane.local_intersect(&local_ray),
             Kind::Cube(cube) => cube.local_intersect(&local_ray),
+            Kind::Cylinder(cylinder) => cylinder.local_intersect(&local_ray),
         };
         xs.iter().map(|&x| Intersection::new(x, &self)).collect()
     }
@@ -32,6 +34,7 @@ impl Shape {
             Kind::Sphere(sphere) => sphere.local_normal_at(local_point),
             Kind::Plane(plane) => plane.local_normal_at(local_point),
             Kind::Cube(cube) => cube.local_normal_at(local_point),
+            Kind::Cylinder(cylinder) => cylinder.local_normal_at(local_point),
         };
         let world_normal = &self.transform_inverse_transpose * local_normal;
         world_normal.normalize()
@@ -69,6 +72,7 @@ pub enum Kind {
     Sphere(Sphere),
     Plane(Plane),
     Cube(Cube),
+    Cylinder(Cylinder),
 }
 
 pub fn sphere() -> Shape {
@@ -96,6 +100,13 @@ pub fn plane() -> Shape {
 pub fn cube() -> Shape {
     Shape {
         shape: Kind::Cube(Cube {}),
+        ..Default::default()
+    }
+}
+
+pub fn cylinder(minimum: f64, maximum: f64, closed: bool) -> Shape {
+    Shape {
+        shape: Kind::Cylinder(Cylinder::new(minimum, maximum, closed)),
         ..Default::default()
     }
 }

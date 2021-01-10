@@ -1,4 +1,5 @@
 mod cube;
+mod cylinder;
 pub mod intersection;
 mod plane;
 pub mod shape;
