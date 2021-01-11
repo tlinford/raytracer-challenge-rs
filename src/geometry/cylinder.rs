@@ -25,9 +25,7 @@ impl Cylinder {
             closed,
         }
     }
-}
 
-impl Cylinder {
     pub fn local_intersect(&self, ray: &Ray) -> Vec<f64> {
         let a = ray.direction().x.powi(2) + ray.direction().z.powi(2);
         if a.abs() < EPSILON {
@@ -80,7 +78,7 @@ impl Cylinder {
 
     fn intersect_caps(&self, ray: &Ray) -> Vec<f64> {
         let mut xs = vec![];
-        if !self.closed || ray.direction().y.abs() < EPSILON {
+        if !self.closed {
             return xs;
         }
 

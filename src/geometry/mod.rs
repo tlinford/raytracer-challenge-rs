@@ -1,3 +1,4 @@
+mod cone;
 mod cube;
 mod cylinder;
 pub mod intersection;

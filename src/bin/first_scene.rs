@@ -3,7 +3,7 @@ use std::{error::Error, f64::consts::PI, path::Path};
 use raytracer::{
     camera::Camera,
     color::Color,
-    geometry::shape::{cube, cylinder, glass_sphere, plane, sphere},
+    geometry::shape::{cone, cube, cylinder, glass_sphere, plane, sphere},
     light::PointLight,
     material::Material,
     matrix::Matrix,
@@ -82,6 +82,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut cylinder = cylinder(0.0, 1.0, true);
     cylinder.set_transform(&(&translation(1.0, 0.0, -1.2) * &scaling(0.33, 0.33, 0.33)));
 
+    let mut cone = cone(-1.0, 0.0, true);
+    cone.set_transform(&(&translation(-1.0, 0.33, -1.2) * &scaling(0.33, 0.33, 0.33)));
+
     let mut world = World::new();
     let light_source1 = PointLight::new(Point::new(-10, 10, -10), Color::new(1.0, 1.0, 1.0));
     let light_source2 = PointLight::new(Point::new(-5.0, 10.0, -6.0), Color::new(0.33, 0.33, 0.33));
@@ -96,6 +99,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     world.add_object(left);
     world.add_object(cube);
     world.add_object(cylinder);
+    world.add_object(cone);
 
     let mut camera = Camera::new(2560, 1440, PI / 3.0);
     camera.set_transform(view_transform(
