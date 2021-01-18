@@ -3,7 +3,7 @@ use std::{error::Error, f64::consts::FRAC_PI_2, path::Path};
 use raytracer::{
     camera::Camera,
     color::Color,
-    geometry::{plane::Plane, shape::Shape, sphere::Sphere},
+    geometry::{shape::Plane, shape::Sphere, Shape},
     light::PointLight,
     pattern::checkers_pattern,
     point::Point,

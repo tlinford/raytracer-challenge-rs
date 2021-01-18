@@ -13,7 +13,7 @@ impl TestPattern {
 mod tests {
     use crate::{
         color::Color,
-        geometry::{shape::Shape, sphere::Sphere},
+        geometry::{shape::Sphere, Shape},
         matrix::Matrix,
         pattern::test_pattern,
         point::Point,

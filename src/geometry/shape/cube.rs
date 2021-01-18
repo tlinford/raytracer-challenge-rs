@@ -1,8 +1,10 @@
-use crate::{equal, point::Point, ray::Ray, vector::Vector, EPSILON};
-
-use super::{
-    intersection::Intersection,
-    shape::{BaseShape, Shape},
+use crate::{
+    equal,
+    geometry::{intersection::Intersection, BaseShape, Shape},
+    point::Point,
+    ray::Ray,
+    vector::Vector,
+    EPSILON,
 };
 
 #[derive(Debug)]

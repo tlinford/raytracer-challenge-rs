@@ -1,6 +1,6 @@
 use crate::{
     color::Color,
-    geometry::shape::Shape,
+    geometry::Shape,
     light::PointLight,
     pattern::Pattern,
     point::Point,
@@ -88,7 +88,7 @@ impl Material {
 
 #[cfg(test)]
 mod tests {
-    use crate::{equal, geometry::sphere::Sphere, pattern::stripe_pattern};
+    use crate::{equal, geometry::shape::Sphere, pattern::stripe_pattern};
 
     use super::*;
 

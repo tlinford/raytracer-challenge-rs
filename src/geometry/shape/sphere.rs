@@ -1,12 +1,8 @@
 use crate::{
+    geometry::{intersection::Intersection, BaseShape, Shape},
     point::Point,
     ray::Ray,
     vector::{dot, Vector},
-};
-
-use super::{
-    intersection::Intersection,
-    shape::{BaseShape, Shape},
 };
 
 #[derive(Debug)]

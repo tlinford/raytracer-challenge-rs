@@ -1,10 +1,10 @@
 use std::cell::RefCell;
 
-use crate::{point::Point, ray::Ray, vector::Vector};
-
-use super::{
-    intersection::Intersection,
-    shape::{BaseShape, Shape},
+use crate::{
+    geometry::{intersection::Intersection, BaseShape, Shape},
+    point::Point,
+    ray::Ray,
+    vector::Vector,
 };
 
 #[derive(Debug)]

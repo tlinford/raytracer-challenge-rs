@@ -3,8 +3,8 @@ use crate::{
     equal,
     geometry::{
         intersection::{hit, intersections, Computations, Intersection},
-        shape::Shape,
-        sphere::Sphere,
+        shape::Sphere,
+        Shape,
     },
     light::PointLight,
     point::Point,
@@ -149,7 +149,7 @@ impl Default for World {
 #[cfg(test)]
 mod tests {
     use crate::{
-        equal, geometry::plane::Plane, pattern::test_pattern, transform::translation,
+        equal, geometry::shape::Plane, pattern::test_pattern, transform::translation,
         vector::Vector,
     };
 

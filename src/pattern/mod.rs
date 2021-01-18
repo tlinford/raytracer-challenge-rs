@@ -3,7 +3,7 @@ use gradient::GradientPattern;
 use ring::RingPattern;
 use stripe::StripePattern;
 
-use crate::{color::Color, geometry::shape::Shape, matrix::Matrix, point::Point};
+use crate::{color::Color, geometry::Shape, matrix::Matrix, point::Point};
 
 use self::test_pattern::TestPattern;
 

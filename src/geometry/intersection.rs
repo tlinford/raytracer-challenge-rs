@@ -5,7 +5,7 @@ use crate::{
     EPSILON,
 };
 
-use super::shape::Shape;
+use super::Shape;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Intersection<'a> {
@@ -136,7 +136,7 @@ impl<'a> Computations<'a> {
 mod tests {
     use crate::{
         equal,
-        geometry::{plane::Plane, sphere::Sphere},
+        geometry::shape::{Plane, Sphere},
         transform::{scaling, translation},
         EPSILON,
     };

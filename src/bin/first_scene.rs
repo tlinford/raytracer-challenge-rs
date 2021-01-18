@@ -3,9 +3,7 @@ use std::{error::Error, f64::consts::PI, path::Path};
 use raytracer::{
     camera::Camera,
     color::Color,
-    geometry::{
-        cone::Cone, cube::Cube, cylinder::Cylinder, plane::Plane, shape::Shape, sphere::Sphere,
-    },
+    geometry::{shape::Cone, shape::Cube, shape::Cylinder, shape::Plane, shape::Sphere, Shape},
     light::PointLight,
     material::Material,
     matrix::Matrix,

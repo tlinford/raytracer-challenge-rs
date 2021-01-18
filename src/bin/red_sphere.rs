@@ -3,7 +3,7 @@ use std::{error::Error, f64::consts::PI, path::Path};
 use raytracer::{
     canvas::Canvas,
     color::Color,
-    geometry::{intersection::hit, shape::Shape, sphere::Sphere},
+    geometry::{intersection::hit, shape::Sphere, Shape},
     matrix::Matrix,
     point::Point,
     ppm::save_ppm,

@@ -23,7 +23,7 @@ impl StripePattern {
 #[cfg(test)]
 mod tests {
     use crate::{
-        geometry::{shape::Shape, sphere::Sphere},
+        geometry::{shape::Sphere, Shape},
         pattern::stripe_pattern,
         transform::{scaling, translation},
     };
