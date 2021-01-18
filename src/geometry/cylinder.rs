@@ -1,7 +1,13 @@
 use crate::{point::Point, ray::Ray, vector::Vector, EPSILON};
 
-#[derive(Debug, PartialEq)]
+use super::{
+    intersection::Intersection,
+    shape::{BaseShape, Shape},
+};
+
+#[derive(Debug)]
 pub struct Cylinder {
+    base: BaseShape,
     minimum: f64,
     maximum: f64,
     closed: bool,
@@ -9,24 +15,56 @@ pub struct Cylinder {
 
 impl Default for Cylinder {
     fn default() -> Self {
-        Self {
-            minimum: f64::NEG_INFINITY,
-            maximum: f64::INFINITY,
-            closed: false,
-        }
+        Self::new(f64::NEG_INFINITY, f64::INFINITY, false)
     }
 }
 
 impl Cylinder {
     pub fn new<T: Into<f64> + Copy>(minimum: T, maximum: T, closed: bool) -> Self {
         Self {
+            base: BaseShape::default(),
             minimum: minimum.into(),
             maximum: maximum.into(),
             closed,
         }
     }
 
-    pub fn local_intersect(&self, ray: &Ray) -> Vec<f64> {
+    fn check_cap(&self, ray: &Ray, t: f64) -> bool {
+        let x = ray.origin().x + t * ray.direction().x;
+        let z = ray.origin().z + t * ray.direction().z;
+        (x * x + z * z) <= 1.0
+    }
+
+    fn intersect_caps(&self, ray: &Ray) -> Vec<Intersection> {
+        let mut xs = vec![];
+        if !self.closed {
+            return xs;
+        }
+
+        let t = (self.minimum - ray.origin().y) / ray.direction().y;
+        if self.check_cap(ray, t) {
+            xs.push(Intersection::new(t, self));
+        }
+
+        let t = (self.maximum - ray.origin().y) / ray.direction().y;
+        if self.check_cap(ray, t) {
+            xs.push(Intersection::new(t, self));
+        }
+
+        xs
+    }
+}
+
+impl Shape for Cylinder {
+    fn get_base(&self) -> &BaseShape {
+        &self.base
+    }
+
+    fn get_base_mut(&mut self) -> &mut BaseShape {
+        &mut self.base
+    }
+
+    fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
         let a = ray.direction().x.powi(2) + ray.direction().z.powi(2);
         if a.abs() < EPSILON {
             return self.intersect_caps(ray);
@@ -46,12 +84,12 @@ impl Cylinder {
         let mut xs = vec![];
         let y0 = ray.origin().y + t0 * ray.direction().y;
         if self.minimum < y0 && y0 < self.maximum {
-            xs.push(t0);
+            xs.push(Intersection::new(t0, self));
         }
 
         let y1 = ray.origin().y + t1 * ray.direction().y;
         if self.minimum < y1 && y1 < self.maximum {
-            xs.push(t1);
+            xs.push(Intersection::new(t1, self));
         }
 
         xs.append(&mut self.intersect_caps(ray));
@@ -59,7 +97,7 @@ impl Cylinder {
         xs
     }
 
-    pub fn local_normal_at(&self, point: Point) -> Vector {
+    fn local_normal_at(&self, point: Point) -> Vector {
         let dist = point.x * point.x + point.z * point.z;
         if dist < 1.0 && point.y >= self.maximum - EPSILON {
             Vector::new(0, 1, 0)
@@ -68,31 +106,6 @@ impl Cylinder {
         } else {
             Vector::new(point.x, 0.0, point.z)
         }
-    }
-
-    fn check_cap(&self, ray: &Ray, t: f64) -> bool {
-        let x = ray.origin().x + t * ray.direction().x;
-        let z = ray.origin().z + t * ray.direction().z;
-        (x * x + z * z) <= 1.0
-    }
-
-    fn intersect_caps(&self, ray: &Ray) -> Vec<f64> {
-        let mut xs = vec![];
-        if !self.closed {
-            return xs;
-        }
-
-        let t = (self.minimum - ray.origin().y) / ray.direction().y;
-        if self.check_cap(ray, t) {
-            xs.push(t);
-        }
-
-        let t = (self.maximum - ray.origin().y) / ray.direction().y;
-        if self.check_cap(ray, t) {
-            xs.push(t);
-        }
-
-        xs
     }
 }
 
@@ -155,8 +168,8 @@ mod tests {
             let r = Ray::new(test.origin, direction);
             let xs = cyl.local_intersect(&r);
             assert_eq!(xs.len(), 2);
-            assert!(equal(xs[0], test.t1));
-            assert!(equal(xs[1], test.t2));
+            assert!(equal(xs[0].t(), test.t1));
+            assert!(equal(xs[1].t(), test.t2));
         }
     }
 

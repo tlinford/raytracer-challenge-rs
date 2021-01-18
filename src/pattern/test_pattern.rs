@@ -13,7 +13,7 @@ impl TestPattern {
 mod tests {
     use crate::{
         color::Color,
-        geometry::shape::sphere,
+        geometry::{shape::Shape, sphere::Sphere},
         matrix::Matrix,
         pattern::test_pattern,
         point::Point,
@@ -37,8 +37,8 @@ mod tests {
 
     #[test]
     fn pattern_with_object_transformation() {
-        let mut object = sphere();
-        object.set_transform(&scaling(2, 2, 2));
+        let mut object = Sphere::default();
+        object.set_transform(scaling(2, 2, 2));
         let pattern = test_pattern();
 
         let c = pattern.color_at_shape(&object, Point::new(2, 3, 4));
@@ -47,7 +47,7 @@ mod tests {
 
     #[test]
     fn pattern_with_pattern_transformation() {
-        let object = sphere();
+        let object = Sphere::default();
         let mut pattern = test_pattern();
         pattern.set_transform(scaling(2, 2, 2));
 
@@ -57,8 +57,8 @@ mod tests {
 
     #[test]
     fn pattern_with_pattern_and_object_transformation() {
-        let mut object = sphere();
-        object.set_transform(&scaling(2, 2, 2));
+        let mut object = Sphere::default();
+        object.set_transform(scaling(2, 2, 2));
 
         let mut pattern = test_pattern();
         pattern.set_transform(translation(0.5, 1.0, 1.5));

@@ -3,7 +3,9 @@ use std::{error::Error, f64::consts::PI, path::Path};
 use raytracer::{
     camera::Camera,
     color::Color,
-    geometry::shape::{cone, cube, cylinder, glass_sphere, plane, sphere},
+    geometry::{
+        cone::Cone, cube::Cube, cylinder::Cylinder, plane::Plane, shape::Shape, sphere::Sphere,
+    },
     light::PointLight,
     material::Material,
     matrix::Matrix,
@@ -18,72 +20,76 @@ use raytracer::{
 fn main() -> Result<(), Box<dyn Error>> {
     println!("simple scene 1.0!");
 
-    let mut floor = plane();
-    floor.material.set_pattern(checkers_pattern(
+    let mut floor = Plane::default();
+    floor.get_base_mut().material.set_pattern(checkers_pattern(
         Color::new(0.0, 0.5, 0.5),
         Color::new(0.5, 0.0, 0.5),
     ));
-    let mut left_wall = plane();
+    let mut left_wall = Plane::default();
 
     let left_wall_transform = Matrix::identity(4, 4)
         .rotate_x(PI / 2.0)
         .rotate_y(-PI / 4.0)
         .translate(0, 0, 5);
 
-    left_wall.set_transform(&left_wall_transform);
+    left_wall.set_transform(left_wall_transform);
     let mut left_wall_pattern = ring_pattern(Color::new(0.0, 0.0, 1.0), Color::new(0.0, 1.0, 1.0));
     left_wall_pattern.set_transform(scaling(0.333, 0.333, 0.333));
-    left_wall.material.set_pattern(left_wall_pattern);
+    left_wall
+        .get_base_mut()
+        .material
+        .set_pattern(left_wall_pattern);
 
-    let mut right_wall = plane();
+    let mut right_wall = Plane::default();
 
     let right_wall_transform = Matrix::identity(4, 4)
         .rotate_x(PI / 2.0)
         .rotate_y(PI / 4.0)
         .translate(0, 0, 5);
 
-    right_wall.set_transform(&right_wall_transform);
-    right_wall.material = Material::default();
+    right_wall.set_transform(right_wall_transform);
+    right_wall.get_base_mut().material = Material::default();
     right_wall
+        .get_base_mut()
         .material
         .set_pattern(stripe_pattern(Color::white(), Color::black()));
 
-    let mut middle = sphere();
-    middle.set_transform(&translation(-0.5, 1.0, 0.5));
-    middle.material.color = Color::new(0.1, 1.0, 0.5);
-    middle.material.diffuse = 0.7;
-    middle.material.specular = 0.3;
-    middle.material.reflective = 0.9;
+    let mut middle = Sphere::default();
+    middle.set_transform(translation(-0.5, 1.0, 0.5));
+    middle.get_base_mut().material.color = Color::new(0.1, 1.0, 0.5);
+    middle.get_base_mut().material.diffuse = 0.7;
+    middle.get_base_mut().material.specular = 0.3;
+    middle.get_base_mut().material.reflective = 0.9;
 
-    let mut right = sphere();
-    right.set_transform(&(&translation(1.5, 0.5, -0.5) * &scaling(0.5, 0.5, 0.5)));
-    right.material.set_pattern(checkers_pattern(
+    let mut right = Sphere::default();
+    right.set_transform(&translation(1.5, 0.5, -0.5) * &scaling(0.5, 0.5, 0.5));
+    right.get_base_mut().material.set_pattern(checkers_pattern(
         Color::new(1.0, 0.0, 0.0),
         Color::new(0.0, 1.0, 0.0),
     ));
 
-    let mut left = glass_sphere();
-    left.material.color = Color::new(0.1, 0.0, 0.0);
-    left.material.ambient = 0.1;
-    left.material.diffuse = 0.05;
-    left.material.reflective = 0.3;
-    left.material.specular = 1.0;
-    left.material.shininess = 300.0;
-    left.set_transform(&(&translation(-1.5, 0.33, -0.75) * &scaling(0.33, 0.33, 0.33)));
+    let mut left = Sphere::glass();
+    left.get_base_mut().material.color = Color::new(0.1, 0.0, 0.0);
+    left.get_base_mut().material.ambient = 0.1;
+    left.get_base_mut().material.diffuse = 0.05;
+    left.get_base_mut().material.reflective = 0.3;
+    left.get_base_mut().material.specular = 1.0;
+    left.get_base_mut().material.shininess = 300.0;
+    left.set_transform(&translation(-1.5, 0.33, -0.75) * &scaling(0.33, 0.33, 0.33));
 
-    let mut cube = cube();
+    let mut cube = Cube::default();
     cube.set_transform(
-        &Matrix::identity(4, 4)
+        Matrix::identity(4, 4)
             .rotate_y(PI / 4.0)
             .scale(0.25, 0.25, 0.25)
             .translate(0.0, 0.25, -1.0),
     );
 
-    let mut cylinder = cylinder(0.0, 1.0, true);
-    cylinder.set_transform(&(&translation(1.0, 0.0, -1.2) * &scaling(0.33, 0.33, 0.33)));
+    let mut cylinder = Cylinder::new(0.0, 1.0, true);
+    cylinder.set_transform(&translation(1.0, 0.0, -1.2) * &scaling(0.33, 0.33, 0.33));
 
-    let mut cone = cone(-1.0, 0.0, true);
-    cone.set_transform(&(&translation(-1.0, 0.33, -1.2) * &scaling(0.33, 0.33, 0.33)));
+    let mut cone = Cone::new(-1.0, 0.0, true);
+    cone.set_transform(&translation(-1.0, 0.33, -1.2) * &scaling(0.33, 0.33, 0.33));
 
     let mut world = World::new();
     let light_source1 = PointLight::new(Point::new(-10, 10, -10), Color::new(1.0, 1.0, 1.0));

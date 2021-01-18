@@ -1,59 +1,17 @@
 use crate::{material::Material, matrix::Matrix, point::Point, ray::Ray, vector::Vector};
+use std::fmt::Debug;
 
-use super::{
-    cone::Cone, cube::Cube, cylinder::Cylinder, intersection::Intersection, plane::Plane,
-    sphere::Sphere, test_shape::TestShape,
-};
+use super::intersection::Intersection;
 
 #[derive(Debug, PartialEq)]
-pub struct Shape {
-    pub transform: Matrix,
+pub struct BaseShape {
+    transform: Matrix,
     pub transform_inverse: Matrix,
     transform_inverse_transpose: Matrix,
     pub material: Material,
-    pub shape: Kind,
 }
 
-impl Shape {
-    pub fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
-        let local_ray = ray.transform(&self.transform_inverse);
-        let xs = match &self.shape {
-            Kind::TestShape(test_shape) => test_shape.local_intersect(&local_ray),
-            Kind::Sphere(sphere) => sphere.local_intersect(&local_ray),
-            Kind::Plane(plane) => plane.local_intersect(&local_ray),
-            Kind::Cube(cube) => cube.local_intersect(&local_ray),
-            Kind::Cylinder(cylinder) => cylinder.local_intersect(&local_ray),
-            Kind::Cone(cone) => cone.local_intersect(&local_ray),
-        };
-        xs.iter().map(|&x| Intersection::new(x, &self)).collect()
-    }
-
-    pub fn normal_at(&self, point: Point) -> Vector {
-        let local_point = &self.transform_inverse * point;
-        let local_normal = match &self.shape {
-            Kind::TestShape(test_shape) => test_shape.local_normal_at(local_point),
-            Kind::Sphere(sphere) => sphere.local_normal_at(local_point),
-            Kind::Plane(plane) => plane.local_normal_at(local_point),
-            Kind::Cube(cube) => cube.local_normal_at(local_point),
-            Kind::Cylinder(cylinder) => cylinder.local_normal_at(local_point),
-            Kind::Cone(cone) => cone.local_normal_at(local_point),
-        };
-        let world_normal = &self.transform_inverse_transpose * local_normal;
-        world_normal.normalize()
-    }
-
-    pub fn transform(&self) -> &Matrix {
-        &self.transform
-    }
-
-    pub fn set_transform(&mut self, transform: &Matrix) {
-        self.transform = transform.clone();
-        self.transform_inverse = self.transform.inverse();
-        self.transform_inverse_transpose = self.transform_inverse.transpose();
-    }
-}
-
-impl Default for Shape {
+impl Default for BaseShape {
     fn default() -> Self {
         let transform = Matrix::identity(4, 4);
         let transform_inverse = Matrix::identity(4, 4);
@@ -63,60 +21,51 @@ impl Default for Shape {
             transform_inverse,
             transform_inverse_transpose,
             material: Material::default(),
-            shape: Kind::TestShape(TestShape::default()),
         }
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub enum Kind {
-    TestShape(TestShape),
-    Sphere(Sphere),
-    Plane(Plane),
-    Cube(Cube),
-    Cylinder(Cylinder),
-    Cone(Cone),
-}
+pub trait Shape: Debug {
+    fn get_base(&self) -> &BaseShape;
+    fn get_base_mut(&mut self) -> &mut BaseShape;
+    fn local_intersect(&self, ray: &Ray) -> Vec<Intersection>;
+    fn local_normal_at(&self, point: Point) -> Vector;
 
-pub fn sphere() -> Shape {
-    Shape {
-        shape: Kind::Sphere(Sphere {}),
-        ..Default::default()
+    fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
+        let local_ray = ray.transform(&self.get_base().transform_inverse);
+        self.local_intersect(&local_ray)
+    }
+
+    fn normal_at(&self, point: Point) -> Vector {
+        let local_point = &self.get_base().transform_inverse * point;
+        let local_normal = self.local_normal_at(local_point);
+        let world_normal = &self.get_base().transform_inverse_transpose * local_normal;
+        world_normal.normalize()
+    }
+
+    fn material(&self) -> &Material {
+        &self.get_base().material
+    }
+
+    fn set_material(&mut self, material: Material) {
+        self.get_base_mut().material = material;
+    }
+
+    fn transform(&self) -> &Matrix {
+        &self.get_base().transform
+    }
+
+    fn set_transform(&mut self, transform: Matrix) {
+        let inverse = transform.inverse();
+        let inverse_transpose = inverse.transpose();
+        self.get_base_mut().transform = transform;
+        self.get_base_mut().transform_inverse = inverse;
+        self.get_base_mut().transform_inverse_transpose = inverse_transpose;
     }
 }
 
-pub fn glass_sphere() -> Shape {
-    let mut sphere = sphere();
-    sphere.material.transparency = 1.0;
-    sphere.material.refractive_index = 1.5;
-
-    sphere
-}
-
-pub fn plane() -> Shape {
-    Shape {
-        shape: Kind::Plane(Plane {}),
-        ..Default::default()
-    }
-}
-
-pub fn cube() -> Shape {
-    Shape {
-        shape: Kind::Cube(Cube {}),
-        ..Default::default()
-    }
-}
-
-pub fn cylinder(minimum: f64, maximum: f64, closed: bool) -> Shape {
-    Shape {
-        shape: Kind::Cylinder(Cylinder::new(minimum, maximum, closed)),
-        ..Default::default()
-    }
-}
-
-pub fn cone(minimum: f64, maximum: f64, closed: bool) -> Shape {
-    Shape {
-        shape: Kind::Cone(Cone::new(minimum, maximum, closed)),
-        ..Default::default()
+impl<'a, 'b> PartialEq<dyn Shape + 'b> for dyn Shape + 'a {
+    fn eq(&self, other: &dyn Shape) -> bool {
+        self.get_base() == other.get_base()
     }
 }

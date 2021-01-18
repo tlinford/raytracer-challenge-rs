@@ -1,8 +1,8 @@
-mod cone;
-mod cube;
-mod cylinder;
+pub mod cone;
+pub mod cube;
+pub mod cylinder;
 pub mod intersection;
-mod plane;
+pub mod plane;
 pub mod shape;
-mod sphere;
+pub mod sphere;
 mod test_shape;

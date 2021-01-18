@@ -3,7 +3,7 @@ use std::{error::Error, f64::consts::PI, path::Path};
 use raytracer::{
     canvas::Canvas,
     color::Color,
-    geometry::{intersection::hit, shape::sphere},
+    geometry::{intersection::hit, shape::Shape, sphere::Sphere},
     light::PointLight,
     material::Material,
     matrix::Matrix,
@@ -24,17 +24,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut canvas = Canvas::new(canvas_pixels, canvas_pixels);
     // let color = Color::new(1.0, 0.0, 0.0);
-    let mut shape = sphere();
+    let mut shape = Sphere::default();
     let mut material = Material::default();
     material.color = Color::new(1.0, 0.2, 1.0);
-    shape.material = material;
+    shape.get_base_mut().material = material;
 
     let light_position = Point::new(-10, 10, -10);
     let light_color = Color::new(1.0, 1.0, 1.0);
     let light = PointLight::new(light_position, light_color);
 
     shape.set_transform(
-        &Matrix::identity(4, 4)
+        Matrix::identity(4, 4)
             .scale(0.5, 1.0, 1.0)
             .rotate_z(PI / 4.0),
     );
@@ -57,12 +57,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let eye = -(r.direction());
                 let color = hit
                     .object()
-                    .material
+                    .material()
                     .lighting(&shape, &light, &point, &eye, &normal, false);
                 canvas.set_pixel(x, y, color);
             }
         }
     }
 
-    save_ppm(&canvas, Path::new("renders/red_sphere.ppm"))
+    save_ppm(&canvas, Path::new("renders/sphere_with_light.ppm"))
 }

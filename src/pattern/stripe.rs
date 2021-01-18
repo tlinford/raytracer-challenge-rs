@@ -23,7 +23,7 @@ impl StripePattern {
 #[cfg(test)]
 mod tests {
     use crate::{
-        geometry::shape::sphere,
+        geometry::{shape::Shape, sphere::Sphere},
         pattern::stripe_pattern,
         transform::{scaling, translation},
     };
@@ -78,8 +78,8 @@ mod tests {
 
     #[test]
     fn stripes_with_object_transformation() {
-        let mut object = sphere();
-        object.set_transform(&scaling(2, 2, 2));
+        let mut object = Sphere::default();
+        object.set_transform(scaling(2, 2, 2));
 
         let black = Color::black();
         let white = Color::white();
@@ -91,7 +91,7 @@ mod tests {
 
     #[test]
     fn stripes_with_pattern_transformation() {
-        let object = sphere();
+        let object = Sphere::default();
 
         let black = Color::black();
         let white = Color::white();
@@ -104,8 +104,8 @@ mod tests {
 
     #[test]
     fn stripes_with_pattern_and_object_transformation() {
-        let mut object = sphere();
-        object.set_transform(&scaling(2, 2, 2));
+        let mut object = Sphere::default();
+        object.set_transform(scaling(2, 2, 2));
 
         let black = Color::black();
         let white = Color::white();

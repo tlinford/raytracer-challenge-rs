@@ -1,45 +1,24 @@
 use crate::{equal, point::Point, ray::Ray, vector::Vector, EPSILON};
 
-#[derive(Debug, PartialEq)]
-pub struct Cube {}
+use super::{
+    intersection::Intersection,
+    shape::{BaseShape, Shape},
+};
+
+#[derive(Debug)]
+pub struct Cube {
+    base: BaseShape,
+}
+
+impl Default for Cube {
+    fn default() -> Self {
+        Self {
+            base: BaseShape::default(),
+        }
+    }
+}
 
 impl Cube {
-    pub fn local_intersect(&self, ray: &Ray) -> Vec<f64> {
-        let (xtmin, xtmax) = self.check_axis(ray.origin().x, ray.direction().x);
-        let (ytmin, ytmax) = self.check_axis(ray.origin().y, ray.direction().y);
-        let (ztmin, ztmax) = self.check_axis(ray.origin().z, ray.direction().z);
-
-        // let tmin = [xtmin, ytmin, ztmin]
-        //     .iter()
-        //     .copied()
-        //     .fold(f64::NAN, f64::max);
-        let tmin = xtmin.max(ytmin).max(ztmin);
-
-        // let tmax = [xtmax, ytmax, ztmax]
-        //     .iter()
-        //     .copied()
-        //     .fold(f64::INFINITY, f64::min);
-        let tmax = xtmax.min(ytmax).min(ztmax);
-
-        if tmin > tmax {
-            vec![]
-        } else {
-            vec![tmin, tmax]
-        }
-    }
-
-    pub fn local_normal_at(&self, point: Point) -> Vector {
-        let maxc = point.x.abs().max(point.y.abs()).max(point.z.abs());
-
-        if equal(maxc, point.x.abs()) {
-            Vector::new(point.x, 0.0, 0.0)
-        } else if equal(maxc, point.y.abs()) {
-            Vector::new(0.0, point.y, 0.0)
-        } else {
-            Vector::new(0.0, 0.0, point.z)
-        }
-    }
-
     fn check_axis(&self, origin: f64, direction: f64) -> (f64, f64) {
         let tmin_numerator = -1.0 - origin;
         let tmax_numerator = 1.0 - origin;
@@ -61,6 +40,52 @@ impl Cube {
     }
 }
 
+impl Shape for Cube {
+    fn get_base(&self) -> &BaseShape {
+        &self.base
+    }
+
+    fn get_base_mut(&mut self) -> &mut BaseShape {
+        &mut self.base
+    }
+
+    fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+        let (xtmin, xtmax) = self.check_axis(ray.origin().x, ray.direction().x);
+        let (ytmin, ytmax) = self.check_axis(ray.origin().y, ray.direction().y);
+        let (ztmin, ztmax) = self.check_axis(ray.origin().z, ray.direction().z);
+
+        // let tmin = [xtmin, ytmin, ztmin]
+        //     .iter()
+        //     .copied()
+        //     .fold(f64::NAN, f64::max);
+        let tmin = xtmin.max(ytmin).max(ztmin);
+
+        // let tmax = [xtmax, ytmax, ztmax]
+        //     .iter()
+        //     .copied()
+        //     .fold(f64::INFINITY, f64::min);
+        let tmax = xtmax.min(ytmax).min(ztmax);
+
+        if tmin > tmax {
+            vec![]
+        } else {
+            vec![Intersection::new(tmin, self), Intersection::new(tmax, self)]
+        }
+    }
+
+    fn local_normal_at(&self, point: Point) -> Vector {
+        let maxc = point.x.abs().max(point.y.abs()).max(point.z.abs());
+
+        if equal(maxc, point.x.abs()) {
+            Vector::new(point.x, 0.0, 0.0)
+        } else if equal(maxc, point.y.abs()) {
+            Vector::new(0.0, point.y, 0.0)
+        } else {
+            Vector::new(0.0, 0.0, point.z)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{equal, point::Point, vector::Vector};
@@ -69,7 +94,7 @@ mod tests {
 
     #[test]
     fn ray_intersects_cube() {
-        let c = Cube {};
+        let c = Cube::default();
         struct TestCase {
             origin: Point,
             direction: Vector,
@@ -102,8 +127,8 @@ mod tests {
             let r = Ray::new(test.origin, test.direction);
             let xs = c.local_intersect(&r);
             assert_eq!(xs.len(), 2);
-            assert!(equal(xs[0], test.t1));
-            assert!(equal(xs[1], test.t2));
+            assert!(equal(xs[0].t(), test.t1));
+            assert!(equal(xs[1].t(), test.t2));
         }
     }
 
@@ -129,7 +154,7 @@ mod tests {
             TestCase::new(Point::new(2, 2, 0), Vector::new(-1, 0, 0)),
         ];
 
-        let c = Cube {};
+        let c = Cube::default();
 
         for test in test_cases {
             let r = Ray::new(test.origin, test.direction);
@@ -162,7 +187,7 @@ mod tests {
             TestCase::new(Point::new(-1, -1, -1), Vector::new(-1, 0, 0)),
         ];
 
-        let c = Cube {};
+        let c = Cube::default();
 
         for test in test_cases {
             let normal = c.local_normal_at(test.point);
