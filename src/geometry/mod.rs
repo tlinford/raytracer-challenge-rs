@@ -2,9 +2,9 @@ pub mod intersection;
 pub mod shape;
 
 use crate::{material::Material, matrix::Matrix, point::Point, ray::Ray, vector::Vector};
-use std::fmt::Debug;
+use std::{fmt::Debug, ptr};
 
-use self::intersection::Intersection;
+use self::{intersection::Intersection, shape::Group};
 
 #[derive(Debug, PartialEq)]
 pub struct BaseShape {
@@ -12,6 +12,7 @@ pub struct BaseShape {
     pub transform_inverse: Matrix,
     transform_inverse_transpose: Matrix,
     pub material: Material,
+    parent: *const Group,
 }
 
 impl Default for BaseShape {
@@ -24,6 +25,7 @@ impl Default for BaseShape {
             transform_inverse,
             transform_inverse_transpose,
             material: Material::default(),
+            parent: ptr::null(),
         }
     }
 }
@@ -69,10 +71,31 @@ pub trait Shape: Debug {
         self.get_base_mut().transform_inverse = inverse;
         self.get_base_mut().transform_inverse_transpose = inverse_transpose;
     }
+
+    fn set_parent(&mut self, parent: &Group) {
+        self.get_base_mut().parent = parent;
+    }
+
+    fn parent(&self) -> Option<&Group> {
+        unsafe { self.get_base().parent.as_ref() }
+    }
 }
 
 impl<'a, 'b> PartialEq<dyn Shape + 'b> for dyn Shape + 'a {
     fn eq(&self, other: &dyn Shape) -> bool {
         self.get_base() == other.get_base()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use shape::Sphere;
+
+    use super::*;
+
+    #[test]
+    fn shape_has_parent() {
+        let s = Sphere::default();
+        assert!(s.parent().is_none());
     }
 }
