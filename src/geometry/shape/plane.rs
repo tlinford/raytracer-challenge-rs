@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use crate::{
     geometry::{intersection::Intersection, BaseShape, Shape},
     point::Point,
@@ -26,6 +28,10 @@ impl Shape for Plane {
 
     fn get_base_mut(&mut self) -> &mut BaseShape {
         &mut self.base
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {

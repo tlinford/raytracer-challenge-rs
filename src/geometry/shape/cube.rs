@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use crate::{
     equal,
     geometry::{intersection::Intersection, BaseShape, Shape},
@@ -49,6 +51,10 @@ impl Shape for Cube {
 
     fn get_base_mut(&mut self) -> &mut BaseShape {
         &mut self.base
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
