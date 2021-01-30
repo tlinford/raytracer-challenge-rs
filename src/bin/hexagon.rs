@@ -8,7 +8,9 @@ use raytracer::{
         Shape,
     },
     light::PointLight,
+    material::Material,
     matrix::Matrix,
+    pattern::checkers_pattern,
     point::Point,
     ppm::save_ppm,
     transform::{rotation_y, scaling, translation, view_transform},
@@ -72,5 +74,13 @@ fn hexagon() -> Group {
         hex.add_child(side)
     }
 
+    let mut material = Material::default();
+    material.set_pattern(checkers_pattern(
+        Color::new(1.0, 0.0, 0.0),
+        Color::new(0.0, 1.0, 0.0),
+    ));
+
+    hex.set_material(material);
+    hex.set_transform(scaling(1.5, 1.5, 1.5));
     hex
 }

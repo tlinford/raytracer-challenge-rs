@@ -2,6 +2,7 @@ use std::{any::Any, vec};
 
 use crate::{
     geometry::{intersection::Intersection, BaseShape, Shape},
+    material::Material,
     matrix::Matrix,
     point::Point,
     ray::Ray,
@@ -71,6 +72,14 @@ impl Shape for Group {
 
         for child in &mut self.children {
             child.set_transform(transform * &child.get_base().transform);
+        }
+    }
+
+    fn set_material(&mut self, material: Material) {
+        self.get_base_mut().material = material.clone();
+
+        for child in &mut self.children {
+            child.set_material(material.clone());
         }
     }
 }
