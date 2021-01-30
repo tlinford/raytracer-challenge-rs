@@ -1,5 +1,5 @@
 use anyhow::Result;
-use std::{cell::RefCell, collections::HashMap, fs, path::Path, rc::Rc};
+use std::{collections::HashMap, fs, path::Path};
 
 use crate::{
     geometry::shape::{Group, Triangle},
@@ -87,7 +87,7 @@ impl Parser {
         triangles
     }
 
-    pub fn to_group(&mut self) -> Group {
+    pub fn as_group(&mut self) -> Group {
         if self.groups.len() == 1 {
             return self.groups.remove("default").unwrap();
         }
@@ -191,7 +191,7 @@ mod tests {
         let mut parser =
             parse_obj_file(Path::new("./src/obj_parser/test_data/triangles.obj")).unwrap();
 
-        let g = parser.to_group();
+        let g = parser.as_group();
 
         let g1 = g.children[0].as_any().downcast_ref::<Group>().unwrap();
         let g2 = g.children[1].as_any().downcast_ref::<Group>().unwrap();
