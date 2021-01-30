@@ -43,7 +43,7 @@ impl Shape for Plane {
         }
     }
 
-    fn local_normal_at(&self, _point: Point) -> Vector {
+    fn local_normal_at(&self, _point: Point, _intersection: &Intersection) -> Vector {
         Vector::new(0, 1, 0)
     }
 }
@@ -57,9 +57,9 @@ mod tests {
     #[test]
     fn plane_normal_is_constant() {
         let p = Plane::default();
-        let n1 = p.local_normal_at(Point::origin());
-        let n2 = p.local_normal_at(Point::new(10, 0, -10));
-        let n3 = p.local_normal_at(Point::new(-5, 0, 150));
+        let n1 = p.local_normal_at(Point::origin(), &Intersection::new(-100.0, &p));
+        let n2 = p.local_normal_at(Point::new(10, 0, -10), &Intersection::new(-100.0, &p));
+        let n3 = p.local_normal_at(Point::new(-5, 0, 150), &Intersection::new(-100.0, &p));
 
         let expected = Vector::new(0, 1, 0);
         assert_eq!(n1, expected);

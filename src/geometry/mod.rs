@@ -32,7 +32,7 @@ pub trait Shape: Debug {
     fn get_base(&self) -> &BaseShape;
     fn get_base_mut(&mut self) -> &mut BaseShape;
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection>;
-    fn local_normal_at(&self, point: Point) -> Vector;
+    fn local_normal_at(&self, point: Point, intersection: &Intersection) -> Vector;
     fn as_any(&self) -> &dyn Any;
 
     fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
@@ -40,9 +40,9 @@ pub trait Shape: Debug {
         self.local_intersect(&local_ray)
     }
 
-    fn normal_at(&self, point: Point) -> Vector {
+    fn normal_at(&self, point: Point, intersection: &Intersection) -> Vector {
         let local_point = &self.get_base().transform_inverse * point;
-        let local_normal = self.local_normal_at(local_point);
+        let local_normal = self.local_normal_at(local_point, intersection);
         let world_normal = &self.get_base().transform_inverse_transpose * local_normal;
         world_normal.normalize()
     }
@@ -110,7 +110,10 @@ mod tests {
 
         let s = &g2.children[0];
 
-        let n = s.normal_at(Point::new(1.7321, 1.1547, -5.5774));
+        let n = s.normal_at(
+            Point::new(1.7321, 1.1547, -5.5774),
+            &Intersection::new(-100.0, s.as_ref()),
+        );
         assert_eq!(n, Vector::new(0.2857, 0.42854, -0.85716));
     }
 }

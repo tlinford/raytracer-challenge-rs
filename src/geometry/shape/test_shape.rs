@@ -41,7 +41,7 @@ impl Shape for TestShape {
         vec![]
     }
 
-    fn local_normal_at(&self, point: Point) -> Vector {
+    fn local_normal_at(&self, point: Point, _intersection: &Intersection) -> Vector {
         Vector::new(point.x, point.y, point.z)
     }
 }
@@ -118,7 +118,10 @@ mod tests {
     fn normal_translated_shape() {
         let mut s = TestShape::default();
         s.set_transform(translation(0, 1, 0));
-        let n = s.normal_at(Point::new(0.0, 1.70711, -FRAC_1_SQRT_2));
+        let n = s.normal_at(
+            Point::new(0.0, 1.70711, -FRAC_1_SQRT_2),
+            &Intersection::new(-100.0, &s),
+        );
         assert_eq!(n, Vector::new(0.0, FRAC_1_SQRT_2, -FRAC_1_SQRT_2));
     }
 
@@ -126,7 +129,10 @@ mod tests {
     fn normal_transformed_shape() {
         let mut s = TestShape::default();
         s.set_transform(&scaling(1.0, 0.5, 1.0) * &rotation_y(PI / 5.0));
-        let n = s.normal_at(Point::new(0.0, 2.0f64.sqrt() / 2.0, -(2.0f64.sqrt() / 2.0)));
+        let n = s.normal_at(
+            Point::new(0.0, 2.0f64.sqrt() / 2.0, -(2.0f64.sqrt() / 2.0)),
+            &Intersection::new(-100.0, &s),
+        );
         assert_eq!(n, Vector::new(0.0, 0.97014, -0.24254));
     }
 }

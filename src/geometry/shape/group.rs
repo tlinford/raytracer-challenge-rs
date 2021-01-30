@@ -52,7 +52,7 @@ impl Shape for Group {
             .collect()
     }
 
-    fn local_normal_at(&self, _point: Point) -> Vector {
+    fn local_normal_at(&self, _point: Point, _intersection: &Intersection) -> Vector {
         unreachable!()
     }
 

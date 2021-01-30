@@ -81,7 +81,7 @@ impl Shape for Cube {
         }
     }
 
-    fn local_normal_at(&self, point: Point) -> Vector {
+    fn local_normal_at(&self, point: Point, _intersection: &Intersection) -> Vector {
         let maxc = point.x.abs().max(point.y.abs()).max(point.z.abs());
 
         if equal(maxc, point.x.abs()) {
@@ -198,7 +198,7 @@ mod tests {
         let c = Cube::default();
 
         for test in test_cases {
-            let normal = c.local_normal_at(test.point);
+            let normal = c.local_normal_at(test.point, &Intersection::new(-100.0, &c));
             assert_eq!(normal, test.normal);
         }
     }

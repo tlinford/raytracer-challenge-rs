@@ -104,7 +104,7 @@ impl Shape for Cylinder {
         xs
     }
 
-    fn local_normal_at(&self, point: Point) -> Vector {
+    fn local_normal_at(&self, point: Point, _intersection: &Intersection) -> Vector {
         let dist = point.x * point.x + point.z * point.z;
         if dist < 1.0 && point.y >= self.maximum - EPSILON {
             Vector::new(0, 1, 0)
@@ -192,7 +192,7 @@ mod tests {
         ];
 
         for test in test_cases {
-            let n = cyl.local_normal_at(test.0);
+            let n = cyl.local_normal_at(test.0, &Intersection::new(-100.0, &cyl));
             assert_eq!(n, test.1);
         }
     }
@@ -264,7 +264,7 @@ mod tests {
         ];
 
         for test in test_cases {
-            let n = cyl.local_normal_at(test.0);
+            let n = cyl.local_normal_at(test.0, &Intersection::new(-100.0, &cyl));
             assert_eq!(n, test.1);
         }
     }

@@ -3,7 +3,11 @@ use std::{error::Error, f64::consts::PI, path::Path};
 use raytracer::{
     canvas::Canvas,
     color::Color,
-    geometry::{intersection::hit, shape::Sphere, Shape},
+    geometry::{
+        intersection::{hit, Intersection},
+        shape::Sphere,
+        Shape,
+    },
     light::PointLight,
     material::Material,
     matrix::Matrix,
@@ -53,7 +57,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             if let Some(hit) = hit(&xs) {
                 let point = r.position(hit.t());
-                let normal = hit.object().normal_at(point);
+                let normal = hit
+                    .object()
+                    .normal_at(point, &Intersection::new(-100.0, &shape));
                 let eye = -(r.direction());
                 let color = hit
                     .object()

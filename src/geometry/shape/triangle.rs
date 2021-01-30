@@ -73,7 +73,7 @@ impl Shape for Triangle {
         vec![Intersection::new(t, self)]
     }
 
-    fn local_normal_at(&self, _point: Point) -> Vector {
+    fn local_normal_at(&self, _point: Point, _intersection: &Intersection) -> Vector {
         self.normal
     }
 }
@@ -109,9 +109,9 @@ mod tests {
             Point::new(-1, 0, 0),
             Point::new(1, 0, 0),
         );
-        let n1 = t.local_normal_at(Point::new(0.0, 0.5, 0.0));
-        let n2 = t.local_normal_at(Point::new(-0.5, 0.75, 0.0));
-        let n3 = t.local_normal_at(Point::new(0.5, 0.25, 0.0));
+        let n1 = t.local_normal_at(Point::new(0.0, 0.5, 0.0), &Intersection::new(-100.0, &t));
+        let n2 = t.local_normal_at(Point::new(-0.5, 0.75, 0.0), &Intersection::new(-100.0, &t));
+        let n3 = t.local_normal_at(Point::new(0.5, 0.25, 0.0), &Intersection::new(-100.0, &t));
 
         assert_eq!(n1, t.normal);
         assert_eq!(n2, t.normal);

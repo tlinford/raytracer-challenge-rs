@@ -11,11 +11,27 @@ use super::Shape;
 pub struct Intersection<'a> {
     t: f64,
     object: &'a dyn Shape,
+    u: Option<f64>,
+    v: Option<f64>,
 }
 
 impl<'a> Intersection<'a> {
     pub fn new(t: f64, object: &'a dyn Shape) -> Self {
-        Self { t, object }
+        Self {
+            t,
+            object,
+            u: None,
+            v: None,
+        }
+    }
+
+    pub fn new_with_uv(t: f64, object: &'a dyn Shape, u: f64, v: f64) -> Self {
+        Self {
+            t,
+            object,
+            u: Some(u),
+            v: Some(v),
+        }
     }
 
     pub fn t(&self) -> f64 {
@@ -26,10 +42,18 @@ impl<'a> Intersection<'a> {
         self.object
     }
 
+    pub fn u(&self) -> Option<f64> {
+        self.u
+    }
+
+    pub fn v(&self) -> Option<f64> {
+        self.v
+    }
+
     pub fn prepare_computations(&self, ray: &Ray, xs: &[Intersection]) -> Computations {
         let point = ray.position(self.t);
         let eyev = -ray.direction();
-        let mut normalv = self.object.normal_at(point);
+        let mut normalv = self.object.normal_at(point, self);
         let mut inside = false;
         if dot(normalv, eyev) < 0.0 {
             inside = true;
@@ -137,7 +161,7 @@ impl<'a> Computations<'a> {
 mod tests {
     use crate::{
         equal,
-        geometry::shape::{Plane, Sphere},
+        geometry::shape::{Plane, Sphere, Triangle},
         transform::{scaling, translation},
         EPSILON,
     };
@@ -358,5 +382,17 @@ mod tests {
         let reflectance = comps.schlick();
         println!("reflectance: {}", reflectance);
         assert!(equal(reflectance, 0.48873));
+    }
+
+    #[test]
+    fn intersection_can_have_u_and_v() {
+        let s = Triangle::new(
+            Point::new(0, 1, 0),
+            Point::new(-1, 0, 0),
+            Point::new(1, 0, 0),
+        );
+        let i = Intersection::new_with_uv(3.5, &s, 0.2, 0.4);
+        assert!(equal(i.u.unwrap(), 0.2));
+        assert!(equal(i.v.unwrap(), 0.4));
     }
 }
