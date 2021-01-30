@@ -233,7 +233,7 @@ impl Mul<Point> for &Matrix {
     type Output = Point;
 
     fn mul(self, rhs: Point) -> Point {
-        assert_eq!(self.columns, 4);
+        assert_eq!(self.rows, 4);
         assert_eq!(self.columns, 4);
 
         Point::new(

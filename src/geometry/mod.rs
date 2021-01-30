@@ -2,9 +2,9 @@ pub mod intersection;
 pub mod shape;
 
 use crate::{material::Material, matrix::Matrix, point::Point, ray::Ray, vector::Vector};
-use std::{any::Any, fmt::Debug, ptr};
+use std::{any::Any, fmt::Debug};
 
-use self::{intersection::Intersection, shape::Group};
+use self::intersection::Intersection;
 
 #[derive(Debug, PartialEq)]
 pub struct BaseShape {
@@ -12,7 +12,6 @@ pub struct BaseShape {
     pub transform_inverse: Matrix,
     transform_inverse_transpose: Matrix,
     pub material: Material,
-    parent: *const Group,
 }
 
 impl Default for BaseShape {
@@ -25,7 +24,6 @@ impl Default for BaseShape {
             transform_inverse,
             transform_inverse_transpose,
             material: Material::default(),
-            parent: ptr::null(),
         }
     }
 }
@@ -43,9 +41,10 @@ pub trait Shape: Debug {
     }
 
     fn normal_at(&self, point: Point) -> Vector {
-        let local_point = self.world_to_object(point);
+        let local_point = &self.get_base().transform_inverse * point;
         let local_normal = self.local_normal_at(local_point);
-        self.normal_to_world(local_normal)
+        let world_normal = &self.get_base().transform_inverse_transpose * local_normal;
+        world_normal.normalize()
     }
 
     fn material(&self) -> &Material {
@@ -71,32 +70,6 @@ pub trait Shape: Debug {
         self.get_base_mut().transform_inverse = inverse;
         self.get_base_mut().transform_inverse_transpose = inverse_transpose;
     }
-
-    fn set_parent(&mut self, parent: &Group) {
-        self.get_base_mut().parent = parent;
-    }
-
-    fn parent(&self) -> Option<&Group> {
-        unsafe { self.get_base().parent.as_ref() }
-    }
-
-    fn world_to_object(&self, mut point: Point) -> Point {
-        if let Some(parent) = self.parent() {
-            point = parent.world_to_object(point);
-        }
-        &self.get_base().transform_inverse * point
-    }
-
-    fn normal_to_world(&self, mut normal: Vector) -> Vector {
-        normal = &self.get_base().transform_inverse_transpose * normal;
-        normal = normal.normalize();
-
-        if let Some(parent) = self.parent() {
-            normal = parent.normal_to_world(normal);
-        }
-
-        normal
-    }
 }
 
 impl<'a, 'b> PartialEq<dyn Shape + 'b> for dyn Shape + 'a {
@@ -113,71 +86,7 @@ mod tests {
 
     use crate::transform::{rotation_y, scaling, translation};
 
-    use super::*;
-
-    #[test]
-    fn shape_has_parent() {
-        let s = Sphere::default();
-        assert!(s.parent().is_none());
-    }
-
-    #[test]
-    fn convert_point_from_world_to_object_space() {
-        let mut g1 = Group::default();
-        g1.set_transform(rotation_y(PI / 2.0));
-
-        let mut g2 = Box::new(Group::default());
-        g2.set_transform(scaling(2, 2, 2));
-
-        let mut s = Box::new(Sphere::default());
-        s.set_transform(translation(5, 0, 0));
-
-        g2.add_child(s);
-        g1.add_child(g2);
-
-        let g2: &Group = (g1.children[0])
-            .as_ref()
-            .as_any()
-            .downcast_ref::<Group>()
-            .unwrap();
-
-        let s = &g2.children[0];
-
-        println!("{:?}", g2.parent());
-
-        let p = s.world_to_object(Point::new(-2, 0, -10));
-        assert_eq!(p, Point::new(0, 0, -1));
-    }
-
-    #[test]
-    fn convert_normal_from_object_to_world_space() {
-        let mut g1 = Group::default();
-        g1.set_transform(rotation_y(PI / 2.0));
-
-        let mut g2 = Box::new(Group::default());
-        g2.set_transform(scaling(1, 2, 3));
-
-        let mut s = Box::new(Sphere::default());
-        s.set_transform(translation(5, 0, 0));
-
-        g2.add_child(s);
-        g1.add_child(g2);
-
-        let g2: &Group = (g1.children[0])
-            .as_ref()
-            .as_any()
-            .downcast_ref::<Group>()
-            .unwrap();
-
-        let s = &g2.children[0];
-
-        let n = s.normal_to_world(Vector::new(
-            3.0f64.sqrt() / 3.0,
-            3.0f64.sqrt() / 3.0,
-            3.0f64.sqrt() / 3.0,
-        ));
-        assert_eq!(n, Vector::new(0.28571, 0.42857, -0.85714));
-    }
+    use super::{shape::Group, *};
 
     #[test]
     fn normal_on_child_object() {

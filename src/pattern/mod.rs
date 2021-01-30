@@ -37,7 +37,7 @@ impl Pattern {
     }
 
     pub fn color_at_shape(&self, shape: &dyn Shape, world_point: Point) -> Color {
-        let object_point = shape.world_to_object(world_point);
+        let object_point = &shape.get_base().transform_inverse * world_point;
         let pattern_point = &self.transform_inverse * object_point;
         match &self.pattern {
             Kind::Test(test_pattern) => test_pattern.color_at(pattern_point),

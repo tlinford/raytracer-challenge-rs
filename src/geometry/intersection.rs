@@ -85,6 +85,7 @@ pub fn intersections<'a>(xs: &[Intersection<'a>]) -> Vec<Intersection<'a>> {
     let mut v = Vec::new();
 
     v.extend_from_slice(xs);
+
     v.sort_unstable_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
 
     v

@@ -2,6 +2,7 @@ use std::{any::Any, vec};
 
 use crate::{
     geometry::{intersection::Intersection, BaseShape, Shape},
+    matrix::Matrix,
     point::Point,
     ray::Ray,
     vector::Vector,
@@ -36,6 +37,13 @@ impl Shape for Group {
         self
     }
 
+    fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
+        self.children
+            .iter()
+            .flat_map(|c| c.intersect(ray))
+            .collect()
+    }
+
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
         self.children
             .iter()
@@ -46,11 +54,30 @@ impl Shape for Group {
     fn local_normal_at(&self, _point: Point) -> Vector {
         unreachable!()
     }
+
+    fn set_transform(&mut self, transform: Matrix) {
+        let inverse_transform = &self.get_base().transform_inverse.clone();
+        for child in &mut self.children {
+            child.set_transform(inverse_transform * &child.get_base().transform);
+        }
+
+        let inverse = transform.inverse();
+        let inverse_transpose = inverse.transpose();
+        self.get_base_mut().transform = transform;
+        self.get_base_mut().transform_inverse = inverse;
+        self.get_base_mut().transform_inverse_transpose = inverse_transpose;
+
+        let transform = &self.get_base().transform.clone();
+
+        for child in &mut self.children {
+            child.set_transform(transform * &child.get_base().transform);
+        }
+    }
 }
 
 impl Group {
     pub fn add_child(&mut self, mut shape: Box<dyn Shape>) {
-        shape.set_parent(self);
+        shape.set_transform(&self.get_base().transform * &shape.get_base().transform);
         self.children.push(shape);
     }
 }
@@ -80,8 +107,6 @@ mod tests {
         g.add_child(Box::new(s));
 
         assert!(!g.children.is_empty());
-        let s = &g.children[0];
-        assert_eq!(s.parent().unwrap(), &g);
     }
 
     #[test]
