@@ -1,14 +1,21 @@
 use anyhow::Result;
-use std::{collections::HashMap, fs, path::Path};
+use std::{
+    collections::HashMap,
+    f64::{INFINITY, NEG_INFINITY},
+    fs,
+    path::Path,
+};
 
 use crate::{
-    geometry::shape::{Group, Triangle},
+    geometry::shape::{Group, SmoothTriangle, Triangle},
     point::Point,
+    vector::Vector,
 };
 
 pub struct Parser {
     ignored: usize,
     vertices: Vec<Point>,
+    vertex_normals: Vec<Vector>,
     groups: HashMap<String, Group>,
     selected_group: String,
 }
@@ -22,6 +29,7 @@ impl Parser {
         Self {
             ignored: 0,
             vertices: vec![Point::origin()],
+            vertex_normals: vec![Vector::new(0, 0, 0)],
             groups,
             selected_group: "default".to_string(),
         }
@@ -34,33 +42,53 @@ impl Parser {
     }
 
     fn parse_line(&mut self, line: &str) {
-        if let Some(first) = line.bytes().next() {
-            match first {
-                b'v' => {
-                    let numbers: Vec<_> = line
-                        .split(' ')
-                        .skip(1)
-                        .map(str::parse::<f64>)
-                        .map(Result::unwrap)
-                        .collect();
+        let mut items = line.split_ascii_whitespace();
+        let kind = items.next();
+        if let Some(kind) = kind {
+            match kind {
+                "v" => {
+                    let numbers: Vec<_> =
+                        items.map(str::parse::<f64>).map(Result::unwrap).collect();
                     self.vertices
                         .push(Point::new(numbers[0], numbers[1], numbers[2]));
                 }
-                b'f' => {
-                    let indices: Vec<_> = line
-                        .split(' ')
-                        .skip(1)
-                        .map(str::parse::<usize>)
-                        .map(Result::unwrap)
-                        .collect();
 
-                    for triangle in self.fan_triangulation(&indices) {
-                        let group = self.groups.get_mut(&self.selected_group).unwrap();
-                        group.add_child(Box::new(triangle));
+                "vn" => {
+                    let numbers: Vec<_> =
+                        items.map(str::parse::<f64>).map(Result::unwrap).collect();
+                    self.vertex_normals
+                        .push(Vector::new(numbers[0], numbers[1], numbers[2]));
+                }
+                "f" => {
+                    if !line.contains('/') {
+                        let indices: Vec<_> =
+                            items.map(str::parse::<usize>).map(Result::unwrap).collect();
+
+                        for triangle in self.fan_triangulation(&indices) {
+                            let group = self.groups.get_mut(&self.selected_group).unwrap();
+                            group.add_child(Box::new(triangle));
+                        }
+                    } else {
+                        let faces: Vec<_> = items
+                            .map(|item| {
+                                let mut split = item.split('/');
+                                (split.next().unwrap(), split.last().unwrap())
+                            })
+                            .map(|(index, normal)| {
+                                (
+                                    str::parse::<usize>(index).unwrap(),
+                                    str::parse::<usize>(normal).unwrap(),
+                                )
+                            })
+                            .collect();
+                        for triangle in self.smooth_fan_triangulation(&faces) {
+                            let group = self.groups.get_mut(&self.selected_group).unwrap();
+                            group.add_child(Box::new(triangle));
+                        }
                     }
                 }
-                b'g' => {
-                    let name = line.split(' ').nth(1).unwrap();
+                "g" => {
+                    let name = items.next().unwrap();
 
                     self.selected_group = name.to_string();
                     self.groups.insert(name.to_string(), Group::default());
@@ -87,6 +115,24 @@ impl Parser {
         triangles
     }
 
+    fn smooth_fan_triangulation(&self, indexes: &[(usize, usize)]) -> Vec<SmoothTriangle> {
+        let mut triangles = vec![];
+
+        for i in 1..indexes.len() - 1 {
+            let triangle = SmoothTriangle::new(
+                self.vertices[indexes[0].0],
+                self.vertices[indexes[i].0],
+                self.vertices[indexes[i + 1].0],
+                self.vertex_normals[indexes[0].1],
+                self.vertex_normals[indexes[i].1],
+                self.vertex_normals[indexes[i + 1].1],
+            );
+            triangles.push(triangle);
+        }
+
+        triangles
+    }
+
     pub fn as_group(&mut self) -> Group {
         if self.groups.len() == 1 {
             return self.groups.remove("default").unwrap();
@@ -100,6 +146,41 @@ impl Parser {
 
         group
     }
+
+    pub fn print_bounds(&self) {
+        let mut min_x = INFINITY;
+        let mut max_x = NEG_INFINITY;
+        let mut min_y = INFINITY;
+        let mut max_y = NEG_INFINITY;
+        let mut min_z = INFINITY;
+        let mut max_z = NEG_INFINITY;
+
+        for vertex in &self.vertices {
+            if vertex.x < min_x {
+                min_x = vertex.x;
+            }
+            if vertex.x > max_x {
+                max_x = vertex.x;
+            }
+            if vertex.y < min_y {
+                min_y = vertex.y;
+            }
+            if vertex.y > max_y {
+                max_y = vertex.y;
+            }
+            if vertex.z < min_z {
+                min_z = vertex.z;
+            }
+            if vertex.z > max_z {
+                max_z = vertex.z;
+            }
+        }
+
+        println!("Model bounds:");
+        println!("x: ({},{})", min_x, max_x);
+        println!("y: ({},{})", min_y, max_y);
+        println!("z: ({},{})", min_z, max_z);
+    }
 }
 
 pub fn parse_obj_file(path: &Path) -> Result<Parser> {
@@ -111,7 +192,10 @@ pub fn parse_obj_file(path: &Path) -> Result<Parser> {
 
 #[cfg(test)]
 mod tests {
-    use crate::geometry::shape::Triangle;
+    use crate::{
+        geometry::shape::{SmoothTriangle, Triangle},
+        vector::Vector,
+    };
 
     use super::*;
 
@@ -204,5 +288,47 @@ mod tests {
         assert!((t1.p2 == parser.vertices[2] || t2.p2 == parser.vertices[2]));
         assert!((t1.p3 == parser.vertices[3] || t2.p3 == parser.vertices[3]));
         assert!((t1.p3 == parser.vertices[4] || t2.p3 == parser.vertices[4]));
+    }
+
+    #[test]
+    fn parse_vertex_normals() {
+        let parser =
+            parse_obj_file(Path::new("./src/obj_parser/test_data/vertex_normals.obj")).unwrap();
+        assert_eq!(parser.vertex_normals[1], Vector::new(0, 0, 1));
+        assert_eq!(parser.vertex_normals[2], Vector::new(0.707, 0.0, -0.707));
+        assert_eq!(parser.vertex_normals[3], Vector::new(1, 2, 3));
+    }
+
+    #[test]
+    fn parse_faces_with_normals() {
+        let parser = parse_obj_file(Path::new(
+            "./src/obj_parser/test_data/faces_with_normals.obj",
+        ))
+        .unwrap();
+
+        let g = parser.groups.get("default").unwrap();
+        let t1 = g.children[0]
+            .as_any()
+            .downcast_ref::<SmoothTriangle>()
+            .unwrap();
+        let t2 = g.children[1]
+            .as_any()
+            .downcast_ref::<SmoothTriangle>()
+            .unwrap();
+
+        assert_eq!(t1.p1, parser.vertices[1]);
+        assert_eq!(t1.p2, parser.vertices[2]);
+        assert_eq!(t1.p3, parser.vertices[3]);
+        assert_eq!(t1.n1, parser.vertex_normals[3]);
+        assert_eq!(t1.n2, parser.vertex_normals[1]);
+        assert_eq!(t1.n3, parser.vertex_normals[2]);
+        assert_eq!(t1, t2);
+    }
+
+    #[test]
+    fn test_parse_line() {
+        let s = "v  7.0000 0.0000 12.0000";
+        let mut parser = Parser::new();
+        parser.parse_line(s);
     }
 }

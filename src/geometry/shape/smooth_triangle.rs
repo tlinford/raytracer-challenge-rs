@@ -8,15 +8,15 @@ use crate::{
     EPSILON,
 };
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct SmoothTriangle {
     base: BaseShape,
     pub p1: Point,
     pub p2: Point,
     pub p3: Point,
-    n1: Vector,
-    n2: Vector,
-    n3: Vector,
+    pub n1: Vector,
+    pub n2: Vector,
+    pub n3: Vector,
     e1: Vector,
     e2: Vector,
     normal: Vector,
