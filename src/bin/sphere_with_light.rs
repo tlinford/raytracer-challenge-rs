@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut shape = Sphere::default();
     let mut material = Material::default();
     material.color = Color::new(1.0, 0.2, 1.0);
-    shape.get_base_mut().material = material;
+    shape.set_material(material);
 
     let light_position = Point::new(-10, 10, -10);
     let light_color = Color::new(1.0, 1.0, 1.0);

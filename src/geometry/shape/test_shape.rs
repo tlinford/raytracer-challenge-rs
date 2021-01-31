@@ -7,7 +7,7 @@ use crate::{
     vector::Vector,
 };
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct TestShape {
     base: BaseShape,
     saved_ray: RefCell<Ray>,

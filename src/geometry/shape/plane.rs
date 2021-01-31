@@ -8,7 +8,7 @@ use crate::{
     EPSILON,
 };
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Plane {
     base: BaseShape,
 }

@@ -1,4 +1,5 @@
 mod cone;
+mod csg;
 mod cube;
 mod cylinder;
 mod group;
@@ -9,6 +10,8 @@ mod test_shape;
 mod triangle;
 
 pub use self::cone::Cone;
+pub use self::csg::Csg;
+pub use self::csg::Operation;
 pub use self::cube::Cube;
 pub use self::cylinder::Cylinder;
 pub use self::group::Group;

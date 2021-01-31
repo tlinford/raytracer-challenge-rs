@@ -57,9 +57,9 @@ impl Shape for Group {
     }
 
     fn set_transform(&mut self, transform: Matrix) {
-        let inverse_transform = &self.get_base().transform_inverse.clone();
+        let inverse = &self.get_base().transform_inverse.clone();
         for child in &mut self.children {
-            child.set_transform(inverse_transform * &child.get_base().transform);
+            child.set_transform(inverse * &child.get_base().transform);
         }
 
         let inverse = transform.inverse();
@@ -81,6 +81,10 @@ impl Shape for Group {
         for child in &mut self.children {
             child.set_material(material.clone());
         }
+    }
+
+    fn includes(&self, other: &dyn Shape) -> bool {
+        self.children.iter().any(|c| c.includes(other))
     }
 }
 

@@ -9,7 +9,7 @@ use crate::{
     EPSILON,
 };
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Cube {
     base: BaseShape,
 }

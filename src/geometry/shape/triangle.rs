@@ -8,7 +8,7 @@ use crate::{
     EPSILON,
 };
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Triangle {
     base: BaseShape,
     pub p1: Point,

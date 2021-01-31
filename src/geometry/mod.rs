@@ -2,7 +2,7 @@ pub mod intersection;
 pub mod shape;
 
 use crate::{material::Material, matrix::Matrix, point::Point, ray::Ray, vector::Vector};
-use std::{any::Any, fmt::Debug};
+use std::{any::Any, fmt::Debug, ptr};
 
 use self::intersection::Intersection;
 
@@ -69,6 +69,10 @@ pub trait Shape: Debug {
         self.get_base_mut().transform = transform;
         self.get_base_mut().transform_inverse = inverse;
         self.get_base_mut().transform_inverse_transpose = inverse_transpose;
+    }
+
+    fn includes(&self, other: &dyn Shape) -> bool {
+        ptr::eq(self.get_base(), other.get_base())
     }
 }
 

@@ -7,7 +7,7 @@ use crate::{
     vector::{dot, Vector},
 };
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Sphere {
     base: BaseShape,
 }
