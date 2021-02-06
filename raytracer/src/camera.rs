@@ -6,6 +6,7 @@ use crate::{
     world::{World, MAX_RECURSION_DEPTH},
 };
 
+#[derive(Debug)]
 pub struct Camera {
     hsize: usize,
     vsize: usize,
