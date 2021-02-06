@@ -1,7 +1,5 @@
 use thiserror::Error;
 
-use crate::SceneParser;
-
 #[derive(Error, Debug)]
 pub enum SceneParserError {
     #[error("missing required key `{0}`")]

@@ -3,40 +3,37 @@ use std::{collections::HashMap, fs, vec};
 use anyhow::Result;
 use error::SceneParserError;
 use raytracer::{
-    camera::Camera, geometry::Shape, material::Material, point::Point, transform::view_transform,
-    vector::Vector,
+    camera::Camera, color::Color, geometry::Shape, light::PointLight, material::Material,
+    point::Point, transform::view_transform, vector::Vector,
 };
 use yaml_rust::{yaml, Yaml, YamlLoader};
 
 mod error;
 
-struct SceneParser {
+pub struct SceneParser {
     camera: Option<Camera>,
+    lights: Vec<PointLight>,
     materials: HashMap<String, Material>,
     shapes: Vec<Box<dyn Shape>>,
 }
 
-enum Add {
-    Material,
-    Shape,
-    Light,
-}
-
-enum Define {
-    Material,
-    Transform,
-}
-
-impl SceneParser {
-    fn new() -> Self {
+impl Default for SceneParser {
+    fn default() -> Self {
         Self {
             camera: None,
+            lights: vec![],
             materials: HashMap::new(),
             shapes: vec![],
         }
     }
+}
 
-    fn load_file(&mut self, path: &str) -> Result<()> {
+impl SceneParser {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn load_file(&mut self, path: &str) -> Result<()> {
         let contents = fs::read_to_string(path).unwrap();
         let yaml = YamlLoader::load_from_str(&contents)?;
         let elements = &yaml[0];
@@ -56,6 +53,7 @@ impl SceneParser {
                     println!("found {} to add", kind);
                     match kind.as_str() {
                         "camera" => self.camera = Some(parse_camera(hash)?),
+                        "light" => self.lights.push(parse_light(hash)?),
                         _ => println!("unhandled element: {}", kind),
                     }
                 }
@@ -79,34 +77,23 @@ fn parse_camera(camera_el: &yaml::Hash) -> Result<Camera> {
         .as_f64()
         .ok_or_else(|| SceneParserError::ParseFloatError("field-of-view".to_string()))?;
 
-    let from_vec = to_float_vec(
+    let from = to_point(
         get_required_attribute(camera_el, "from".to_string())?
             .as_vec()
             .ok_or_else(|| SceneParserError::ParseVecError("from".to_string()))?,
     )?;
-    if from_vec.len() != 3 {
-        return Err(SceneParserError::ParseVecError("from".to_string()).into());
-    }
-    let to_vec = to_float_vec(
+
+    let to = to_point(
         get_required_attribute(camera_el, "to".to_string())?
             .as_vec()
             .ok_or_else(|| SceneParserError::ParseVecError("to".to_string()))?,
     )?;
-    if to_vec.len() != 3 {
-        return Err(SceneParserError::ParseVecError("from".to_string()).into());
-    }
-    let up_vec = to_float_vec(
+
+    let up = to_vector(
         get_required_attribute(camera_el, "up".to_string())?
             .as_vec()
             .ok_or_else(|| SceneParserError::ParseVecError("up".to_string()))?,
     )?;
-    if up_vec.len() != 3 {
-        return Err(SceneParserError::ParseVecError("from".to_string()).into());
-    }
-
-    let from = Point::new(from_vec[0], from_vec[1], from_vec[2]);
-    let to = Point::new(to_vec[0], to_vec[1], to_vec[2]);
-    let up = Vector::new(up_vec[0], up_vec[1], up_vec[2]);
 
     println!("from: {:?}, to: {:?}, up: {:?}", from, to, up);
     let mut camera = Camera::new(width as usize, height as usize, field_of_view);
@@ -116,17 +103,33 @@ fn parse_camera(camera_el: &yaml::Hash) -> Result<Camera> {
     Ok(camera)
 }
 
+fn parse_light(light_el: &yaml::Hash) -> Result<PointLight> {
+    let at = to_point(
+        get_required_attribute(light_el, "at".to_string())?
+            .as_vec()
+            .ok_or_else(|| SceneParserError::ParseVecError("from".to_string()))?,
+    )?;
+    let intensity = to_color(
+        get_required_attribute(light_el, "intensity".to_string())?
+            .as_vec()
+            .ok_or_else(|| SceneParserError::ParseVecError("from".to_string()))?,
+    )?;
+    let light = PointLight::new(at, intensity);
+    println!("light: {:?}", light);
+    Ok(light)
+}
+
 fn get_required_attribute(hash: &yaml::Hash, key: String) -> Result<&Yaml> {
     Ok(hash
         .get(&Yaml::String(key.clone()))
         .ok_or(SceneParserError::MissingRequiredKey(key))?)
 }
 
-fn to_float_vec(v: &Vec<Yaml>) -> Result<Vec<f64>> {
+fn to_float_vec(v: &[Yaml]) -> Result<Vec<f64>> {
     let res = v
         .iter()
         .map(|f| match f {
-            Yaml::Real(r) => f.as_f64(),
+            Yaml::Real(_) => f.as_f64(),
             Yaml::Integer(i) => Some(*i as f64),
             _ => None,
         })
@@ -137,6 +140,33 @@ fn to_float_vec(v: &Vec<Yaml>) -> Result<Vec<f64>> {
         })
         .collect::<Result<Vec<_>>>();
     res
+}
+
+fn to_point(v: &[Yaml]) -> Result<Point> {
+    let numbers = to_float_vec(v)?;
+    if numbers.len() != 3 {
+        Err(SceneParserError::ParseVecError("from".to_string()).into())
+    } else {
+        Ok(Point::new(numbers[0], numbers[1], numbers[2]))
+    }
+}
+
+fn to_vector(v: &[Yaml]) -> Result<Vector> {
+    let numbers = to_float_vec(v)?;
+    if numbers.len() != 3 {
+        Err(SceneParserError::ParseVecError("from".to_string()).into())
+    } else {
+        Ok(Vector::new(numbers[0], numbers[1], numbers[2]))
+    }
+}
+
+fn to_color(v: &[Yaml]) -> Result<Color> {
+    let numbers = to_float_vec(v)?;
+    if numbers.len() != 3 {
+        Err(SceneParserError::ParseVecError("from".to_string()).into())
+    } else {
+        Ok(Color::new(numbers[0], numbers[1], numbers[2]))
+    }
 }
 
 #[cfg(test)]
@@ -150,5 +180,6 @@ mod tests {
         println!("res: {:?}", res);
         assert!(res.is_ok());
         assert!(p.camera.is_some());
+        assert_eq!(p.lights.len(), 1);
     }
 }
