@@ -16,4 +16,10 @@ pub enum SceneParserError {
     ParseTransformError,
     #[error("failed to parse material")]
     ParseMaterialError,
+    #[error("invalid add element found")]
+    InvalidAddElementError,
+    #[error("invalid define element found")]
+    InvalidDefineElementError,
+    #[error("failed to parse pattern")]
+    ParsePatternError,
 }
