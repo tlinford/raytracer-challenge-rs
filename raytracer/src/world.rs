@@ -88,6 +88,10 @@ impl World {
         self.objects.push(Box::new(object));
     }
 
+    pub fn add_boxed_object(&mut self, object: Box<dyn Shape>) {
+        self.objects.push(object);
+    }
+
     pub fn is_shadowed(&self, point: Point, light: &PointLight) -> bool {
         let v = light.position() - point;
         let distance = v.magnitude();

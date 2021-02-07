@@ -1,29 +1,76 @@
-use std::{collections::HashMap, fs, vec};
+use std::{collections::HashMap, fs, path::Path, todo, vec};
 
 use anyhow::Result;
 use error::SceneParserError;
+use lazy_static::lazy_static;
 use raytracer::{
-    camera::Camera, color::Color, geometry::Shape, light::PointLight, material::Material,
-    point::Point, transform::view_transform, vector::Vector,
+    camera::{self, Camera},
+    color::Color,
+    geometry::{
+        shape::{Plane, Sphere},
+        Shape,
+    },
+    light::PointLight,
+    material::Material,
+    matrix::Matrix,
+    point::Point,
+    ppm::save_ppm,
+    transform::{self, rotation_y, rotation_z, view_transform},
+    vector::Vector,
+    world::World,
 };
+use transform::{rotation_x, scaling, translation};
 use yaml_rust::{yaml, Yaml, YamlLoader};
 
 mod error;
 
-pub struct SceneParser {
+lazy_static! {
+    static ref ADD_KEY: Yaml = Yaml::String(String::from("add"));
+    static ref DEFINE_KEY: Yaml = Yaml::String(String::from("define"));
+    static ref TRANSFORM_KEY: Yaml = Yaml::String(String::from("transform"));
+    static ref MATERIAL_KEY: Yaml = Yaml::String(String::from("material"));
+    static ref MATERIAL_COLOR_KEY: Yaml = Yaml::String(String::from("color"));
+    static ref MATERIAL_AMBIENT_KEY: Yaml = Yaml::String(String::from("ambient"));
+    static ref MATERIAL_DIFFUSE_KEY: Yaml = Yaml::String(String::from("diffuse"));
+    static ref MATERIAL_SPECULAR_KEY: Yaml = Yaml::String(String::from("specular"));
+    static ref MATERIAL_SHININESS_KEY: Yaml = Yaml::String(String::from("shininess"));
+    static ref MATERIAL_REFLECTIVE_KEY: Yaml = Yaml::String(String::from("reflective"));
+    static ref MATERIAL_TRANSPARENCY_KEY: Yaml = Yaml::String(String::from("transparency"));
+    static ref MATERIAL_REFRACTIVE_INDEX_KEY: Yaml = Yaml::String(String::from("refractive-index"));
+}
+
+pub struct Scene {
     camera: Option<Camera>,
     lights: Vec<PointLight>,
     materials: HashMap<String, Material>,
     shapes: Vec<Box<dyn Shape>>,
 }
 
-impl Default for SceneParser {
+impl Default for Scene {
     fn default() -> Self {
         Self {
             camera: None,
             lights: vec![],
             materials: HashMap::new(),
             shapes: vec![],
+        }
+    }
+}
+
+impl Scene {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+pub struct SceneParser {
+    scene: Scene,
+}
+
+impl Default for SceneParser {
+    fn default() -> Self {
+        Self {
+            scene: Scene::new(),
         }
     }
 }
@@ -38,28 +85,80 @@ impl SceneParser {
         let yaml = YamlLoader::load_from_str(&contents)?;
         let elements = &yaml[0];
         if let Yaml::Array(array) = elements {
-            for el in array {
-                self.parse_element(el)?;
+            let define_elements: Vec<&Yaml> = array
+                .iter()
+                .filter(|&element| is_define_element(element))
+                .collect();
+            println!("found {} define elements", define_elements.len());
+
+            for el in define_elements {
+                self.parse_define_element(el)?;
             }
+
+            let add_elements: Vec<&Yaml> = array
+                .iter()
+                .filter(|&element| is_add_element(element))
+                .collect();
+            println!("found {} add elements", add_elements.len());
+
+            for el in add_elements {
+                self.parse_add_element(el)?;
+            }
+        } else {
+            return Err(error::SceneParserError::BadInputFile(String::from(path)).into());
         }
         Ok(())
     }
 
-    fn parse_element(&mut self, element: &Yaml) -> Result<()> {
-        let add_key = Yaml::String("add".to_string());
+    fn parse_add_element(&mut self, element: &Yaml) -> Result<()> {
         if let Yaml::Hash(hash) = element {
-            if let Some(add) = hash.get(&add_key) {
+            if let Some(add) = hash.get(&ADD_KEY) {
                 if let Yaml::String(kind) = add {
-                    println!("found {} to add", kind);
                     match kind.as_str() {
-                        "camera" => self.camera = Some(parse_camera(hash)?),
-                        "light" => self.lights.push(parse_light(hash)?),
+                        "camera" => self.scene.camera = Some(parse_camera(hash)?),
+                        "light" => self.scene.lights.push(parse_light(hash)?),
+                        "sphere" | "plane" => self.scene.shapes.push(parse_shape(kind, hash)?),
                         _ => println!("unhandled element: {}", kind),
                     }
                 }
             }
         }
         Ok(())
+    }
+
+    fn parse_define_element(&mut self, element: &Yaml) -> Result<()> {
+        Ok(())
+    }
+
+    fn render(&mut self) {
+        let mut world = World::new();
+        for light in self.scene.lights.drain(0..) {
+            world.add_light(light);
+        }
+        for shape in self.scene.shapes.drain(0..) {
+            world.add_boxed_object(shape);
+        }
+
+        let camera = self.scene.camera.as_mut().unwrap();
+
+        let canvas = camera.render(&world);
+        save_ppm(&canvas, Path::new("test.ppm"));
+    }
+}
+
+fn is_add_element(element: &Yaml) -> bool {
+    if let Yaml::Hash(hash) = element {
+        hash.contains_key(&ADD_KEY)
+    } else {
+        false
+    }
+}
+
+fn is_define_element(element: &Yaml) -> bool {
+    if let Yaml::Hash(hash) = element {
+        hash.contains_key(&DEFINE_KEY)
+    } else {
+        false
     }
 }
 
@@ -119,26 +218,127 @@ fn parse_light(light_el: &yaml::Hash) -> Result<PointLight> {
     Ok(light)
 }
 
+fn parse_shape(kind: &str, shape_el: &yaml::Hash) -> Result<Box<dyn Shape>> {
+    let mut shape: Box<dyn Shape> = match kind {
+        "sphere" => Box::new(Sphere::default()),
+        "plane" => Box::new(Plane::default()),
+        _ => unreachable!(),
+    };
+
+    if let Some(transform) = shape_el.get(&TRANSFORM_KEY) {
+        let transform = parse_transform(transform)?;
+        shape.set_transform(transform);
+    }
+
+    if let Some(material) = shape_el.get(&MATERIAL_KEY) {
+        let material = parse_material(material)?;
+        shape.set_material(material);
+    }
+
+    println!("shape: {:?}", shape);
+    Ok(shape)
+}
+
+fn parse_transform(transform_el: &Yaml) -> Result<Matrix> {
+    if let Yaml::Array(transforms) = transform_el {
+        let mut transform = Matrix::identity(4, 4);
+        for transform_item_el in transforms {
+            let transform_item = parse_transform_item(transform_item_el)?;
+            transform = &transform_item * &transform;
+        }
+
+        Ok(transform)
+    } else {
+        Err(error::SceneParserError::ParseTransformError.into())
+    }
+}
+
+fn parse_transform_item(transform_item_el: &Yaml) -> Result<Matrix> {
+    if let Yaml::Array(transform) = transform_item_el {
+        let kind = transform[0]
+            .as_str()
+            .ok_or(error::SceneParserError::ParseTransformError)?;
+        let args = to_float_vec(&transform[1..])?;
+        match kind {
+            "scale" => Ok(scaling(args[0], args[1], args[2])),
+            "translate" => Ok(translation(args[0], args[1], args[2])),
+            "rotate-x" => Ok(rotation_x(args[0])),
+            "rotate-y" => Ok(rotation_y(args[0])),
+            "rotate-z" => Ok(rotation_z(args[0])),
+            _ => Err(error::SceneParserError::ParseTransformError.into()),
+        }
+    } else {
+        Err(error::SceneParserError::ParseTransformError.into())
+    }
+}
+
+fn parse_material(material_el: &Yaml) -> Result<Material> {
+    if let Yaml::String(defined_material) = material_el {
+        println!("found defined material: {:?}", defined_material);
+        Ok(Material::default())
+    } else if let Yaml::Hash(material_def) = material_el {
+        let mut material = Material::default();
+        if let Some(color_el) = material_def.get(&MATERIAL_COLOR_KEY) {
+            material.color = to_color(
+                color_el
+                    .as_vec()
+                    .ok_or(error::SceneParserError::ParseMaterialError)?,
+            )?;
+        }
+        if let Some(ambient_el) = material_def.get(&MATERIAL_AMBIENT_KEY) {
+            material.ambient = to_f64(ambient_el)?;
+        }
+
+        if let Some(diffuse_el) = material_def.get(&MATERIAL_DIFFUSE_KEY) {
+            material.diffuse = to_f64(diffuse_el)?;
+        }
+
+        if let Some(specular_el) = material_def.get(&MATERIAL_SPECULAR_KEY) {
+            material.specular = to_f64(specular_el)?;
+        }
+
+        if let Some(shininess_el) = material_def.get(&MATERIAL_SHININESS_KEY) {
+            material.shininess = to_f64(shininess_el)?;
+        }
+
+        if let Some(reflective_el) = material_def.get(&MATERIAL_REFLECTIVE_KEY) {
+            material.reflective = to_f64(reflective_el)?;
+        }
+
+        if let Some(transparency_el) = material_def.get(&MATERIAL_TRANSPARENCY_KEY) {
+            material.transparency = to_f64(transparency_el)?;
+        }
+
+        if let Some(refractive_index_el) = material_def.get(&MATERIAL_REFRACTIVE_INDEX_KEY) {
+            material.refractive_index = to_f64(refractive_index_el)?;
+        }
+
+        println!("material: {:?}", material);
+        Ok(material)
+    } else {
+        Err(error::SceneParserError::ParseMaterialError.into())
+    }
+}
+
 fn get_required_attribute(hash: &yaml::Hash, key: String) -> Result<&Yaml> {
     Ok(hash
         .get(&Yaml::String(key.clone()))
         .ok_or(SceneParserError::MissingRequiredKey(key))?)
 }
 
+fn to_f64(f: &Yaml) -> Result<f64> {
+    match f {
+        Yaml::Real(_) => f
+            .as_f64()
+            .ok_or_else(|| error::SceneParserError::ParseFloatError(String::from("f")).into()),
+        Yaml::Integer(i) => Ok(*i as f64),
+        // Yaml::Integer(i) => Ok(i as f64),
+        _ => Err(error::SceneParserError::ParseFloatError(String::from("f")).into()),
+    }
+}
+
 fn to_float_vec(v: &[Yaml]) -> Result<Vec<f64>> {
-    let res = v
-        .iter()
-        .map(|f| match f {
-            Yaml::Real(_) => f.as_f64(),
-            Yaml::Integer(i) => Some(*i as f64),
-            _ => None,
-        })
-        .map(|f| {
-            f.ok_or_else(|| {
-                anyhow::Error::from(SceneParserError::ParseFloatError(String::from("f")))
-            })
-        })
-        .collect::<Result<Vec<_>>>();
+    let res = v.iter().map(to_f64).collect::<Result<Vec<_>>>();
     res
 }
 
@@ -179,7 +379,14 @@ mod tests {
         let res = p.load_file(file);
         println!("res: {:?}", res);
         assert!(res.is_ok());
-        assert!(p.camera.is_some());
-        assert_eq!(p.lights.len(), 1);
+        assert!(p.scene.camera.is_some());
+        assert_eq!(p.scene.lights.len(), 1);
+        assert_eq!(p.scene.shapes.len(), 13);
+    }
+
+    #[test]
+    fn test_is_add_element() {
+        let element = &YamlLoader::load_from_str("add: plane").unwrap()[0];
+        println!("{:?}", element);
     }
 }

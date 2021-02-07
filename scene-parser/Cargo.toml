@@ -11,3 +11,4 @@ yaml-rust = "0.4"
 anyhow = "1.0.38"
 raytracer = { path = "../raytracer" }
 thiserror = "1.0"
+lazy_static = "1.4.0"

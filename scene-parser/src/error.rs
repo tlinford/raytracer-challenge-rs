@@ -2,6 +2,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum SceneParserError {
+    #[error("invalid input file `{0}`")]
+    BadInputFile(String),
     #[error("missing required key `{0}`")]
     MissingRequiredKey(String),
     #[error("failed to parse `{0}` as i64")]
@@ -10,4 +12,8 @@ pub enum SceneParserError {
     ParseFloatError(String),
     #[error("failed to parse `{0}` as vec")]
     ParseVecError(String),
+    #[error("failed to parse transform")]
+    ParseTransformError,
+    #[error("failed to parse material")]
+    ParseMaterialError,
 }
