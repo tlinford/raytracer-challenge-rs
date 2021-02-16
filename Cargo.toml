@@ -1,3 +1,6 @@
 [workspace]
 
 members = ["raytracer", "scene-parser"]
+
+[profile.release]
+debug = true

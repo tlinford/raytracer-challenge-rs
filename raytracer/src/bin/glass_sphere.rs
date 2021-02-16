@@ -1,4 +1,6 @@
-use std::{error::Error, f64::consts::FRAC_PI_2, path::Path};
+use std::{f64::consts::FRAC_PI_2, path::Path};
+
+use anyhow::Result;
 
 use raytracer::{
     camera::Camera,
@@ -13,7 +15,7 @@ use raytracer::{
     world::World,
 };
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     let mut world = World::new();
 
     let mut camera = Camera::new(2560, 2560, 0.45);

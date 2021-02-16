@@ -7,7 +7,7 @@ use raytracer::{
     camera::Camera,
     color::Color,
     geometry::{
-        shape::{Plane, Sphere},
+        shape::{Cube, Plane, Sphere},
         Shape,
     },
     light::PointLight,
@@ -28,6 +28,7 @@ mod error;
 lazy_static! {
     static ref ADD_KEY: Yaml = Yaml::String(String::from("add"));
     static ref DEFINE_KEY: Yaml = Yaml::String(String::from("define"));
+    static ref EXTEND_KEY: Yaml = Yaml::String(String::from("extend"));
     static ref VALUE_KEY: Yaml = Yaml::String(String::from("value"));
     static ref TRANSFORM_KEY: Yaml = Yaml::String(String::from("transform"));
     static ref MATERIAL_KEY: Yaml = Yaml::String(String::from("material"));
@@ -48,6 +49,7 @@ pub struct Scene {
     camera: Option<Camera>,
     lights: Vec<PointLight>,
     materials: HashMap<String, Material>,
+    transforms: HashMap<String, Matrix>,
     shapes: Vec<Box<dyn Shape>>,
 }
 
@@ -57,6 +59,7 @@ impl Default for Scene {
             camera: None,
             lights: vec![],
             materials: HashMap::new(),
+            transforms: HashMap::new(),
             shapes: vec![],
         }
     }
@@ -123,7 +126,10 @@ impl SceneParser {
                     match kind.as_str() {
                         "camera" => self.scene.camera = Some(parse_camera(hash)?),
                         "light" => self.scene.lights.push(parse_light(hash)?),
-                        "sphere" | "plane" => self.scene.shapes.push(self.parse_shape(kind, hash)?),
+                        "sphere" | "plane" | "cube" => {
+                            let shape = self.parse_shape(kind, hash)?;
+                            self.scene.shapes.push(shape);
+                        }
                         _ => println!("unhandled element: {}", kind),
                     }
                     return Ok(());
@@ -143,14 +149,36 @@ impl SceneParser {
             let define_value_el = hash
                 .get(&VALUE_KEY)
                 .ok_or(error::SceneParserError::InvalidDefineElementError)?;
+            let extend = hash.get(&EXTEND_KEY);
             match define_value_el {
                 Yaml::Array(_) => {
-                    println!("found transform");
+                    println!("found defined transform {}", name);
+                    let transform = self.parse_transform(define_value_el)?;
+                    self.scene.transforms.insert(String::from(name), transform);
                 }
                 Yaml::Hash(_) => {
-                    println!("found material");
-                    let material = self.parse_material(define_value_el)?;
-                    self.scene.materials.insert(String::from(name), material);
+                    println!("found defined material {}", name);
+                    if extend.is_some() {
+                        let base_material_name = extend
+                            .unwrap()
+                            .as_str()
+                            .ok_or(error::SceneParserError::InvalidDefineElementError)?;
+                        println!("found material {} extending: {}", name, base_material_name);
+                        let mut base_material = self
+                            .scene
+                            .materials
+                            .get(base_material_name)
+                            .ok_or(error::SceneParserError::InvalidDefineElementError)?
+                            .clone();
+                        base_material = self.extend_material(base_material, define_value_el)?;
+                        println!("extended material: {:?}", base_material);
+                        self.scene
+                            .materials
+                            .insert(String::from(name), base_material);
+                    } else {
+                        let material = self.parse_material(define_value_el)?;
+                        self.scene.materials.insert(String::from(name), material);
+                    }
                 }
                 _ => unreachable!(),
             }
@@ -158,15 +186,16 @@ impl SceneParser {
         Ok(())
     }
 
-    fn parse_shape(&self, kind: &str, shape_el: &yaml::Hash) -> Result<Box<dyn Shape>> {
+    fn parse_shape(&mut self, kind: &str, shape_el: &yaml::Hash) -> Result<Box<dyn Shape>> {
         let mut shape: Box<dyn Shape> = match kind {
             "sphere" => Box::new(Sphere::default()),
             "plane" => Box::new(Plane::default()),
+            "cube" => Box::new(Cube::default()),
             _ => unreachable!(),
         };
 
         if let Some(transform) = shape_el.get(&TRANSFORM_KEY) {
-            let transform = parse_transform(transform)?;
+            let transform = self.parse_transform(transform)?;
             shape.set_transform(transform);
         }
 
@@ -179,6 +208,7 @@ impl SceneParser {
         Ok(shape)
     }
 
+    // change this to return a MaterialBuilder so that it can be used with extends...
     fn parse_material(&self, material_el: &Yaml) -> Result<Material> {
         if let Yaml::String(defined_material) = material_el {
             println!("found defined material: {:?}", defined_material);
@@ -236,7 +266,7 @@ impl SceneParser {
         }
     }
 
-    pub fn render(&mut self) {
+    pub fn render(&mut self, output_filename: &Path) -> Result<()> {
         let mut world = World::new();
         for light in self.scene.lights.drain(0..) {
             world.add_light(light);
@@ -248,7 +278,98 @@ impl SceneParser {
         let camera = self.scene.camera.as_mut().unwrap();
 
         let canvas = camera.render(&world);
-        save_ppm(&canvas, Path::new("test.ppm"));
+        save_ppm(&canvas, Path::new(output_filename))?;
+        println!("scene saved to {}", output_filename.to_string_lossy());
+        Ok(())
+    }
+
+    fn extend_material(&self, mut material: Material, material_el: &Yaml) -> Result<Material> {
+        if let Yaml::Hash(material_def) = material_el {
+            if let Some(color_el) = material_def.get(&MATERIAL_COLOR_KEY) {
+                material.color = to_color(
+                    color_el
+                        .as_vec()
+                        .ok_or(error::SceneParserError::ParseMaterialError)?,
+                )?;
+            }
+            if let Some(pattern_el) = material_def.get(&MATERIAL_PATTERN_KEY) {
+                material.set_pattern(parse_pattern(pattern_el)?);
+            }
+            if let Some(ambient_el) = material_def.get(&MATERIAL_AMBIENT_KEY) {
+                material.ambient = to_f64(ambient_el)?;
+            }
+
+            if let Some(diffuse_el) = material_def.get(&MATERIAL_DIFFUSE_KEY) {
+                material.diffuse = to_f64(diffuse_el)?;
+            }
+
+            if let Some(specular_el) = material_def.get(&MATERIAL_SPECULAR_KEY) {
+                material.specular = to_f64(specular_el)?;
+            }
+
+            if let Some(shininess_el) = material_def.get(&MATERIAL_SHININESS_KEY) {
+                material.shininess = to_f64(shininess_el)?;
+            }
+
+            if let Some(reflective_el) = material_def.get(&MATERIAL_REFLECTIVE_KEY) {
+                material.reflective = to_f64(reflective_el)?;
+            }
+
+            if let Some(transparency_el) = material_def.get(&MATERIAL_TRANSPARENCY_KEY) {
+                material.transparency = to_f64(transparency_el)?;
+            }
+
+            if let Some(refractive_index_el) = material_def.get(&MATERIAL_REFRACTIVE_INDEX_KEY) {
+                material.refractive_index = to_f64(refractive_index_el)?;
+            }
+
+            println!("material: {:?}", material);
+            Ok(material)
+        } else {
+            Err(error::SceneParserError::ParseMaterialError.into())
+        }
+    }
+
+    fn parse_transform(&mut self, transform_el: &Yaml) -> Result<Matrix> {
+        println!("parsing transform {:?}", transform_el);
+        if let Yaml::Array(transforms) = transform_el {
+            //
+            let mut transform = Matrix::identity(4, 4);
+            for transform_item_el in transforms {
+                let transform_item = self.parse_transform_item(transform_item_el)?;
+                transform = &transform_item * &transform;
+            }
+
+            Ok(transform)
+        } else {
+            Err(error::SceneParserError::ParseTransformError.into())
+        }
+    }
+
+    fn parse_transform_item(&mut self, transform_item_el: &Yaml) -> Result<Matrix> {
+        if let Yaml::Array(transform) = transform_item_el {
+            let kind = transform[0]
+                .as_str()
+                .ok_or(error::SceneParserError::ParseTransformError)?;
+            let args = to_float_vec(&transform[1..])?;
+            match kind {
+                "scale" => Ok(scaling(args[0], args[1], args[2])),
+                "translate" => Ok(translation(args[0], args[1], args[2])),
+                "rotate-x" => Ok(rotation_x(args[0])),
+                "rotate-y" => Ok(rotation_y(args[0])),
+                "rotate-z" => Ok(rotation_z(args[0])),
+                _ => Err(error::SceneParserError::ParseTransformError.into()),
+            }
+        } else if let Yaml::String(defined_transform) = transform_item_el {
+            Ok(self
+                .scene
+                .transforms
+                .get(defined_transform)
+                .ok_or(error::SceneParserError::ParseTransformError)?
+                .clone())
+        } else {
+            Err(error::SceneParserError::ParseTransformError.into())
+        }
     }
 }
 
@@ -322,39 +443,6 @@ fn parse_light(light_el: &yaml::Hash) -> Result<PointLight> {
     let light = PointLight::new(at, intensity);
     println!("light: {:?}", light);
     Ok(light)
-}
-
-fn parse_transform(transform_el: &Yaml) -> Result<Matrix> {
-    if let Yaml::Array(transforms) = transform_el {
-        let mut transform = Matrix::identity(4, 4);
-        for transform_item_el in transforms {
-            let transform_item = parse_transform_item(transform_item_el)?;
-            transform = &transform_item * &transform;
-        }
-
-        Ok(transform)
-    } else {
-        Err(error::SceneParserError::ParseTransformError.into())
-    }
-}
-
-fn parse_transform_item(transform_item_el: &Yaml) -> Result<Matrix> {
-    if let Yaml::Array(transform) = transform_item_el {
-        let kind = transform[0]
-            .as_str()
-            .ok_or(error::SceneParserError::ParseTransformError)?;
-        let args = to_float_vec(&transform[1..])?;
-        match kind {
-            "scale" => Ok(scaling(args[0], args[1], args[2])),
-            "translate" => Ok(translation(args[0], args[1], args[2])),
-            "rotate-x" => Ok(rotation_x(args[0])),
-            "rotate-y" => Ok(rotation_y(args[0])),
-            "rotate-z" => Ok(rotation_z(args[0])),
-            _ => Err(error::SceneParserError::ParseTransformError.into()),
-        }
-    } else {
-        Err(error::SceneParserError::ParseTransformError.into())
-    }
 }
 
 fn parse_pattern(pattern_el: &Yaml) -> Result<Pattern> {
@@ -458,7 +546,16 @@ mod tests {
         assert_eq!(p.scene.shapes.len(), 13);
         assert_eq!(p.scene.materials.len(), 1);
 
-        p.render();
+        //p.render();
+    }
+
+    #[test]
+    fn test_load_other_file() {
+        let file = "./examples/cover.yml";
+        let mut p = SceneParser::new();
+        let res = p.load_file(file);
+        println!("res: {:?}", res);
+        assert!(res.is_ok());
     }
 
     #[test]

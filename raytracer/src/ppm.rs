@@ -1,8 +1,9 @@
-use std::{error::Error, fs::File, io::Write, path::Path};
+use anyhow::Result;
+use std::{fs::File, io::Write, path::Path};
 
 use crate::{canvas::Canvas, color::Color};
 
-pub fn save_ppm(canvas: &Canvas, path: &Path) -> Result<(), Box<dyn Error>> {
+pub fn save_ppm(canvas: &Canvas, path: &Path) -> Result<()> {
     let ppm = canvas_to_ppm(&canvas);
     let mut file = File::create(path)?;
     file.write_all(ppm.as_bytes())?;

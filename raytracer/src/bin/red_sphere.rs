@@ -1,4 +1,6 @@
-use std::{error::Error, f64::consts::PI, path::Path};
+use std::{f64::consts::PI, path::Path};
+
+use anyhow::Result;
 
 use raytracer::{
     canvas::Canvas,
@@ -10,7 +12,7 @@ use raytracer::{
     ray::Ray,
 };
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     println!("simple sphere render 1.0");
 
     let ray_origin = Point::new(0, 0, -5);

@@ -1,4 +1,6 @@
-use std::{error::Error, f64::consts::PI, path::Path};
+use std::{f64::consts::PI, path::Path};
+
+use anyhow::Result;
 
 use raytracer::{
     camera::Camera,
@@ -18,7 +20,7 @@ use raytracer::{
     world::World,
 };
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     println!("hexagon scene");
 
     let mut world = World::new();

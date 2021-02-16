@@ -1,8 +1,10 @@
-use std::{error::Error, f64::consts::PI, path::Path};
+use std::{f64::consts::PI, path::Path};
+
+use anyhow::Result;
 
 use raytracer::{canvas::Canvas, color::Color, point::Point, ppm::save_ppm, transform::rotation_y};
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     println!("clock simulator 0.1!");
 
     let mut canvas = Canvas::new(1000, 1000);

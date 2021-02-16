@@ -1,8 +1,9 @@
-use std::{error::Error, path::Path};
+use std::path::Path;
 
+use anyhow::Result;
 use raytracer::{canvas::Canvas, color::Color, point::Point, ppm::save_ppm, vector::Vector};
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     let mut p = Projectile::new(
         Point::new(0.0, 1.0, 0.0),
         Vector::new(1.0, 1.8, 0.0).normalize() * 11.25,
