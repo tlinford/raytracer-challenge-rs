@@ -1,5 +1,15 @@
+use std::{
+    sync::{
+        mpsc::{self, Receiver, Sender},
+        Arc,
+    },
+    thread,
+    time::Instant,
+};
+
 use crate::{
     canvas::Canvas,
+    color::Color,
     matrix::Matrix,
     point::Point,
     ray::Ray,
@@ -61,7 +71,7 @@ impl Camera {
         self.transform_inverse = self.transform.inverse();
     }
 
-    pub fn render(&mut self, world: &World) -> Canvas {
+    pub fn render(&self, world: &World) -> Canvas {
         let mut image = Canvas::new(self.hsize, self.vsize);
 
         for y in 0..self.vsize {
@@ -77,6 +87,117 @@ impl Camera {
 
         image
     }
+
+    pub fn render_multithreaded(this: Arc<Self>, world: Arc<World>, num_threads: usize) -> Canvas {
+        let mut image = Canvas::new(this.hsize, this.vsize);
+
+        let mut handles = vec![];
+        let (tx, rx): (Sender<RenderThreadResult>, Receiver<RenderThreadResult>) = mpsc::channel();
+        let rows_per_thread = this.vsize / num_threads;
+        println!(
+            "running with {} threads: assigning {} rows per thread",
+            num_threads, rows_per_thread
+        );
+        let start_time = Instant::now();
+        for i in 0..num_threads {
+            let camera_ref = this.clone();
+            let world_ref = world.clone();
+            let tx_ref = tx.clone();
+            let handle = thread::spawn(move || {
+                let (start, end) = (i * rows_per_thread, i * rows_per_thread + rows_per_thread);
+                let mut result = RenderThreadResult {
+                    start,
+                    end,
+                    colors: vec![],
+                };
+                for y in start..end {
+                    // if y % 10 == 0 {
+                    //     println!("rendering row in thread {} {}/{}", i, y, camera_ref.vsize);
+                    // }
+                    for x in 0..camera_ref.hsize {
+                        let ray = camera_ref.ray_for_pixel(x, y);
+                        let color = world_ref.color_at(&ray, MAX_RECURSION_DEPTH);
+                        result.colors.push(color);
+                    }
+                }
+                tx_ref.send(result).unwrap();
+            });
+            handles.push(handle);
+        }
+
+        // let camera_ref = this.clone();
+        // let world_ref = world.clone();
+        // let (tx, rx): (Sender<RenderThreadResult>, Receiver<RenderThreadResult>) = mpsc::channel();
+        // let tx_ref = tx.clone();
+        // let handle1 = thread::spawn(move || {
+        //     let (start, end) = (0, camera_ref.vsize / 2);
+        //     let mut result = RenderThreadResult {
+        //         start,
+        //         end,
+        //         colors: vec![],
+        //     };
+        //     for y in start..end {
+        //         if y % 10 == 0 {
+        //             println!("rendering row in thread 1 {}/{}", y, camera_ref.vsize);
+        //         }
+        //         for x in 0..camera_ref.hsize {
+        //             let ray = camera_ref.ray_for_pixel(x, y);
+        //             let color = world_ref.color_at(&ray, MAX_RECURSION_DEPTH);
+        //             result.colors.push(color);
+        //         }
+        //     }
+        //     tx_ref.send(result).unwrap();
+        // });
+
+        // let camera_ref2 = this.clone();
+        // let handle2 = thread::spawn(move || {
+        //     let (start, end) = (camera_ref2.vsize / 2, camera_ref2.vsize);
+        //     let mut result = RenderThreadResult {
+        //         start,
+        //         end,
+        //         colors: vec![],
+        //     };
+        //     for y in start..end {
+        //         if y % 10 == 0 {
+        //             println!("rendering row in thread 2 {}/{}", y, camera_ref2.vsize);
+        //         }
+
+        //         for x in 0..camera_ref2.hsize {
+        //             let ray = camera_ref2.ray_for_pixel(x, y);
+        //             let color = world.color_at(&ray, MAX_RECURSION_DEPTH);
+        //             result.colors.push(color);
+        //         }
+        //     }
+        //     tx.send(result).unwrap();
+        // });
+
+        for _ in 0..num_threads {
+            let res = rx.recv().unwrap();
+            println!("received colors array from thread");
+            let mut i = 0;
+            for y in res.start..res.end {
+                for x in 0..this.hsize {
+                    image.set_pixel(x, y, res.colors[i]);
+                    i += 1;
+                }
+            }
+        }
+
+        let elapsed_time = start_time.elapsed().as_millis();
+        println!("rendered in {} ms", elapsed_time);
+
+        for handle in handles {
+            handle.join().expect("could not join thread handle");
+        }
+        println!("all render threads done!");
+        image
+    }
+}
+
+struct RenderThreadResult {
+    start: usize,
+    end: usize,
+    colors: Vec<Color>,
 }
 
 #[cfg(test)]

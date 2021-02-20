@@ -121,19 +121,17 @@ impl SceneParser {
 
     fn parse_add_element(&mut self, element: &Yaml) -> Result<()> {
         if let Yaml::Hash(hash) = element {
-            if let Some(add) = hash.get(&ADD_KEY) {
-                if let Yaml::String(kind) = add {
-                    match kind.as_str() {
-                        "camera" => self.scene.camera = Some(parse_camera(hash)?),
-                        "light" => self.scene.lights.push(parse_light(hash)?),
-                        "sphere" | "plane" | "cube" => {
-                            let shape = self.parse_shape(kind, hash)?;
-                            self.scene.shapes.push(shape);
-                        }
-                        _ => println!("unhandled element: {}", kind),
+            if let Some(Yaml::String(kind)) = hash.get(&ADD_KEY) {
+                match kind.as_str() {
+                    "camera" => self.scene.camera = Some(parse_camera(hash)?),
+                    "light" => self.scene.lights.push(parse_light(hash)?),
+                    "sphere" | "plane" | "cube" => {
+                        let shape = self.parse_shape(kind, hash)?;
+                        self.scene.shapes.push(shape);
                     }
-                    return Ok(());
+                    _ => println!("unhandled element: {}", kind),
                 }
+                return Ok(());
             }
         }
         Err(error::SceneParserError::InvalidAddElementError.into())

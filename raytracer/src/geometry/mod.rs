@@ -28,7 +28,7 @@ impl Default for BaseShape {
     }
 }
 
-pub trait Shape: Debug {
+pub trait Shape: Debug + Send + Sync {
     fn get_base(&self) -> &BaseShape;
     fn get_base_mut(&mut self) -> &mut BaseShape;
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection>;

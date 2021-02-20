@@ -1,9 +1,9 @@
-use std::{f64::consts::PI, path::Path};
+use std::{f64::consts::PI, path::Path, sync::Arc};
 
 use anyhow::Result;
 
 use raytracer::{
-    camera::Camera,
+    camera::{self, Camera},
     color::Color,
     geometry::{shape::Cone, shape::Cube, shape::Cylinder, shape::Plane, shape::Sphere, Shape},
     light::PointLight,
@@ -114,6 +114,11 @@ fn main() -> Result<()> {
         Vector::new(0, 1, 0),
     ));
 
-    let canvas = camera.render(&world);
-    save_ppm(&canvas, Path::new("renders/first_scene.ppm"))
+    // let canvas = camera.render(&world);
+    // save_ppm(&canvas, Path::new("renders/first_scene.ppm"))
+    let canvas = camera::Camera::render_multithreaded(Arc::new(camera), Arc::new(world), 1);
+    save_ppm(
+        &canvas,
+        Path::new("raytracer/renders/first_scene_multithread.ppm"),
+    )
 }

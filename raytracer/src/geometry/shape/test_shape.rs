@@ -1,4 +1,4 @@
-use std::{any::Any, cell::RefCell};
+use std::{any::Any, sync::RwLock};
 
 use crate::{
     geometry::{intersection::Intersection, BaseShape, Shape},
@@ -7,17 +7,17 @@ use crate::{
     vector::Vector,
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 struct TestShape {
     base: BaseShape,
-    saved_ray: RefCell<Ray>,
+    saved_ray: RwLock<Ray>,
 }
 
 impl Default for TestShape {
     fn default() -> Self {
         Self {
             base: BaseShape::default(),
-            saved_ray: RefCell::new(Ray::new(Point::origin(), Vector::new(0, 0, 0))),
+            saved_ray: RwLock::new(Ray::new(Point::origin(), Vector::new(0, 0, 0))),
         }
     }
 }
@@ -36,8 +36,7 @@ impl Shape for TestShape {
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
-        self.saved_ray
-            .replace(Ray::new(ray.origin(), ray.direction()));
+        *self.saved_ray.write().unwrap() = Ray::new(ray.origin(), ray.direction());
         vec![]
     }
 
@@ -97,7 +96,7 @@ mod tests {
         s.set_transform(scaling(2, 2, 2));
 
         s.intersect(&r);
-        let r = s.saved_ray.borrow();
+        let r = s.saved_ray.read().unwrap();
         assert_eq!(r.origin(), Point::new(0.0, 0.0, -2.5));
         assert_eq!(r.direction(), Vector::new(0.0, 0.0, 0.5));
     }
@@ -109,7 +108,7 @@ mod tests {
         s.set_transform(translation(5, 0, 0));
 
         s.intersect(&r);
-        let r = s.saved_ray.borrow();
+        let r = s.saved_ray.read().unwrap();
         assert_eq!(r.origin(), Point::new(-5, 0, -5));
         assert_eq!(r.direction(), Vector::new(0, 0, 1));
     }
