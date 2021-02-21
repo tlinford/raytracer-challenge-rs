@@ -6,12 +6,12 @@ use raytracer::{
     camera::{self, Camera},
     color::Color,
     geometry::{shape::Cone, shape::Cube, shape::Cylinder, shape::Plane, shape::Sphere, Shape},
+    image::{png::PngExporter, ExportCanvas},
     light::PointLight,
     material::Material,
     matrix::Matrix,
     pattern::{checkers_pattern, ring_pattern, stripe_pattern},
     point::Point,
-    ppm::save_ppm,
     transform::{scaling, translation, view_transform},
     vector::Vector,
     world::World,
@@ -117,8 +117,11 @@ fn main() -> Result<()> {
     // let canvas = camera.render(&world);
     // save_ppm(&canvas, Path::new("renders/first_scene.ppm"))
     let canvas = camera::Camera::render_multithreaded(Arc::new(camera), Arc::new(world), 1);
-    save_ppm(
+
+    let exporter = PngExporter {};
+    exporter.save(
         &canvas,
-        Path::new("raytracer/renders/first_scene_multithread.ppm"),
-    )
+        Path::new("raytracer/renders/first_scene_multithread.png"),
+    )?;
+    Ok(())
 }

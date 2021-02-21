@@ -3,6 +3,16 @@ use std::{fs::File, io::Write, path::Path};
 
 use crate::{canvas::Canvas, color::Color};
 
+use super::ExportCanvas;
+
+pub struct PpmExporter {}
+
+impl ExportCanvas for PpmExporter {
+    fn save(&self, canvas: &Canvas, path: &Path) -> Result<()> {
+        save_ppm(canvas, path)
+    }
+}
+
 pub fn save_ppm(canvas: &Canvas, path: &Path) -> Result<()> {
     let ppm = canvas_to_ppm(&canvas);
     let mut file = File::create(path)?;

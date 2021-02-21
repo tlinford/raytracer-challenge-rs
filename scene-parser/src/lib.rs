@@ -10,12 +10,12 @@ use raytracer::{
         shape::{Cube, Plane, Sphere},
         Shape,
     },
+    image::ExportCanvas,
     light::PointLight,
     material::Material,
     matrix::Matrix,
     pattern::{checkers_pattern, stripe_pattern, Pattern},
     point::Point,
-    ppm::save_ppm,
     transform::{self, rotation_y, rotation_z, view_transform},
     vector::Vector,
     world::World,
@@ -276,7 +276,9 @@ impl SceneParser {
         let camera = self.scene.camera.as_mut().unwrap();
 
         let canvas = camera.render(&world);
-        save_ppm(&canvas, Path::new(output_filename))?;
+        let exporter = raytracer::image::png::PngExporter {};
+
+        exporter.save(&canvas, output_filename)?;
         println!("scene saved to {}", output_filename.to_string_lossy());
         Ok(())
     }

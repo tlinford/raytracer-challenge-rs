@@ -6,9 +6,9 @@ use raytracer::{
     canvas::Canvas,
     color::Color,
     geometry::{intersection::hit, shape::Sphere, Shape},
+    image::ppm::save_ppm,
     matrix::Matrix,
     point::Point,
-    ppm::save_ppm,
     ray::Ray,
 };
 

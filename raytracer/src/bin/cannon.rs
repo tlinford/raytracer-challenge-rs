@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use anyhow::Result;
-use raytracer::{canvas::Canvas, color::Color, point::Point, ppm::save_ppm, vector::Vector};
+use raytracer::{canvas::Canvas, color::Color, image::ppm::save_ppm, point::Point, vector::Vector};
 
 fn main() -> Result<()> {
     let mut p = Projectile::new(

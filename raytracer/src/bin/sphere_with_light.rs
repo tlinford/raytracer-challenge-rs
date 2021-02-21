@@ -10,11 +10,11 @@ use raytracer::{
         shape::Sphere,
         Shape,
     },
+    image::ppm::save_ppm,
     light::PointLight,
     material::Material,
     matrix::Matrix,
     point::Point,
-    ppm::save_ppm,
     ray::Ray,
 };
 
