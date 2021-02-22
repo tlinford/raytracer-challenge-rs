@@ -2,7 +2,7 @@ use std::f64;
 
 use crate::point::Point;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct BoundingBox {
     min: Point,
     max: Point,
@@ -14,6 +14,12 @@ impl Default for BoundingBox {
             min: Point::new(f64::INFINITY, f64::INFINITY, f64::INFINITY),
             max: Point::new(f64::NEG_INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY),
         }
+    }
+}
+
+impl PartialEq for BoundingBox {
+    fn eq(&self, other: &Self) -> bool {
+        Point::eq_ignore_inf(&self.min, &other.min) && Point::eq_ignore_inf(&self.max, &other.max)
     }
 }
 

@@ -18,12 +18,16 @@ pub mod world;
 const EPSILON: f64 = 0.00001;
 
 fn equal(a: f64, b: f64) -> bool {
+    (a - b).abs() < EPSILON
+}
+
+fn equal_ignore_inf(a: f64, b: f64) -> bool {
     // TODO: WORKAROUND TO MAKE EQUALITY WORK WHEN BOUNDING BOXES HAVE -INF OR +INF COORDS
     if a.is_infinite() && b.is_infinite() {
         return (a.is_sign_positive() && a.is_sign_positive())
             || (b.is_sign_negative() && b.is_sign_negative());
     }
-    (a - b).abs() < EPSILON
+    equal(a, b)
 }
 
 #[cfg(test)]
@@ -31,6 +35,7 @@ mod tests {
     use super::*;
     #[test]
     fn infiny_is_equal() {
-        assert!(equal(f64::INFINITY, f64::INFINITY));
+        assert!(!equal(f64::INFINITY, f64::INFINITY));
+        assert!(equal_ignore_inf(f64::INFINITY, f64::INFINITY));
     }
 }

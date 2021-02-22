@@ -1,6 +1,6 @@
 use std::ops::{Add, Sub};
 
-use crate::vector::Vector;
+use crate::{equal, equal_ignore_inf, vector::Vector};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Point {
@@ -21,13 +21,17 @@ impl Point {
     pub fn origin() -> Self {
         Self::new(0, 0, 0)
     }
+
+    pub fn eq_ignore_inf(&self, &other: &Self) -> bool {
+        equal_ignore_inf(self.x, other.x)
+            && equal_ignore_inf(self.y, other.y)
+            && equal_ignore_inf(self.z, other.z)
+    }
 }
 
 impl PartialEq for Point {
     fn eq(&self, other: &Self) -> bool {
-        crate::equal(self.x, other.x)
-            && crate::equal(self.y, other.y)
-            && crate::equal(self.z, other.z)
+        equal(self.x, other.x) && equal(self.y, other.y) && equal(self.z, other.z)
     }
 }
 
