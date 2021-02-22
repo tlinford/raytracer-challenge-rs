@@ -38,6 +38,13 @@ impl Shape for Group {
         self
     }
 
+    fn equals(&self, other: &dyn Shape) -> bool {
+        other
+            .as_any()
+            .downcast_ref::<Group>()
+            .map_or(false, |a| self == a)
+    }
+
     fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
         self.children
             .iter()

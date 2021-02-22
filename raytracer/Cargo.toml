@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.38"
 image = "0.23.13"
+uuid = { version = "0.8", features = ["v4"] }

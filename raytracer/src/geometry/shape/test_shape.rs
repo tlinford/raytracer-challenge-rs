@@ -1,6 +1,7 @@
 use std::{any::Any, sync::RwLock};
 
 use crate::{
+    bounding_box::BoundingBox,
     geometry::{intersection::Intersection, BaseShape, Shape},
     point::Point,
     ray::Ray,
@@ -16,7 +17,10 @@ struct TestShape {
 impl Default for TestShape {
     fn default() -> Self {
         Self {
-            base: BaseShape::default(),
+            base: BaseShape {
+                bounding_box: BoundingBox::new(Point::new(-1, -1, -1), Point::new(1, 1, 1)),
+                ..Default::default()
+            },
             saved_ray: RwLock::new(Ray::new(Point::origin(), Vector::new(0, 0, 0))),
         }
     }
@@ -33,6 +37,10 @@ impl Shape for TestShape {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+
+    fn equals(&self, other: &dyn Shape) -> bool {
+        self.get_base() == other.get_base()
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
@@ -133,5 +141,14 @@ mod tests {
             &Intersection::new(-100.0, &s),
         );
         assert_eq!(n, Vector::new(0.0, 0.97014, -0.24254));
+    }
+
+    #[test]
+    fn test_shape_bounds() {
+        let s = TestShape::default();
+        let bb = s.get_bounds();
+
+        assert_eq!(bb.get_min(), Point::new(-1, -1, -1));
+        assert_eq!(bb.get_max(), Point::new(1, 1, 1));
     }
 }

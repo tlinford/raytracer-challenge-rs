@@ -1,6 +1,9 @@
 use std::any::Any;
 
+use std::f64::{INFINITY, NEG_INFINITY};
+
 use crate::{
+    bounding_box::BoundingBox,
     geometry::{intersection::Intersection, BaseShape, Shape},
     point::Point,
     ray::Ray,
@@ -16,7 +19,13 @@ pub struct Plane {
 impl Default for Plane {
     fn default() -> Self {
         Self {
-            base: BaseShape::default(),
+            base: BaseShape {
+                bounding_box: BoundingBox::new(
+                    Point::new(NEG_INFINITY, 0.0, NEG_INFINITY),
+                    Point::new(INFINITY, 0.0, INFINITY),
+                ),
+                ..Default::default()
+            },
         }
     }
 }
@@ -32,6 +41,13 @@ impl Shape for Plane {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+
+    fn equals(&self, other: &dyn Shape) -> bool {
+        other
+            .as_any()
+            .downcast_ref::<Plane>()
+            .map_or(false, |a| self == a)
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
@@ -99,5 +115,18 @@ mod tests {
         let xs = p.local_intersect(&r);
         assert_eq!(xs.len(), 1);
         assert!(equal(xs[0].t(), 1.0))
+    }
+
+    #[test]
+    fn plane_bounding_box() {
+        let s = Plane::default();
+        let bb = s.get_bounds();
+        assert!(bb.get_min().x.is_infinite() && bb.get_min().x < 0.0);
+        assert!(equal(bb.get_min().y, 0.0));
+        assert!(bb.get_min().z.is_infinite() && bb.get_min().z < 0.0);
+
+        assert!(bb.get_max().x.is_infinite() && bb.get_max().x > 0.0);
+        assert!(equal(bb.get_min().y, 0.0));
+        assert!(bb.get_max().z.is_infinite() && bb.get_max().z > 0.0);
     }
 }

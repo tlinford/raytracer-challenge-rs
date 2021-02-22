@@ -1,6 +1,7 @@
 use std::any::Any;
 
 use crate::{
+    bounding_box::BoundingBox,
     equal,
     geometry::{intersection::Intersection, BaseShape, Shape},
     point::Point,
@@ -17,7 +18,10 @@ pub struct Cube {
 impl Default for Cube {
     fn default() -> Self {
         Self {
-            base: BaseShape::default(),
+            base: BaseShape {
+                bounding_box: BoundingBox::new(Point::new(-1, -1, -1), Point::new(1, 1, 1)),
+                ..Default::default()
+            },
         }
     }
 }
@@ -55,6 +59,13 @@ impl Shape for Cube {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+
+    fn equals(&self, other: &dyn Shape) -> bool {
+        other
+            .as_any()
+            .downcast_ref::<Cube>()
+            .map_or(false, |a| self == a)
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
@@ -201,5 +212,13 @@ mod tests {
             let normal = c.local_normal_at(test.point, &Intersection::new(-100.0, &c));
             assert_eq!(normal, test.normal);
         }
+    }
+
+    #[test]
+    fn cube_bounding_box() {
+        let s = Cube::default();
+        let bb = s.get_bounds();
+        assert_eq!(bb.get_min(), Point::new(-1, -1, -1));
+        assert_eq!(bb.get_max(), Point::new(1, 1, 1));
     }
 }

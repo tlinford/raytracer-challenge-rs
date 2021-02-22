@@ -1,6 +1,7 @@
 use std::any::Any;
 
 use crate::{
+    bounding_box::BoundingBox,
     geometry::{intersection::Intersection, BaseShape, Shape},
     point::Point,
     ray::Ray,
@@ -15,7 +16,10 @@ pub struct Sphere {
 impl Default for Sphere {
     fn default() -> Self {
         Self {
-            base: BaseShape::default(),
+            base: BaseShape {
+                bounding_box: BoundingBox::new(Point::new(-1, -1, -1), Point::new(1, 1, 1)),
+                ..Default::default()
+            },
         }
     }
 }
@@ -31,6 +35,13 @@ impl Shape for Sphere {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+
+    fn equals(&self, other: &dyn Shape) -> bool {
+        other
+            .as_any()
+            .downcast_ref::<Sphere>()
+            .map_or(false, |a| self == a)
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
@@ -231,5 +242,20 @@ mod tests {
         assert_eq!(s.transform(), &Matrix::identity(4, 4));
         assert!(equal(s.get_base().material.transparency, 1.0));
         assert!(equal(s.get_base().material.refractive_index, 1.5));
+    }
+
+    #[test]
+    fn sphere_bounding_box() {
+        let s = Sphere::default();
+        let bb = s.get_bounds();
+        assert_eq!(bb.get_min(), Point::new(-1, -1, -1));
+        assert_eq!(bb.get_max(), Point::new(1, 1, 1));
+    }
+
+    #[test]
+    fn sphere_equals() {
+        let s1 = Sphere::default();
+        let s2 = Sphere::default();
+        assert_eq!(s1, s2);
     }
 }

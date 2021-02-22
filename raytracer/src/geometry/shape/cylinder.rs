@@ -1,6 +1,7 @@
 use std::any::Any;
 
 use crate::{
+    bounding_box::BoundingBox,
     geometry::{intersection::Intersection, BaseShape, Shape},
     point::Point,
     ray::Ray,
@@ -25,7 +26,13 @@ impl Default for Cylinder {
 impl Cylinder {
     pub fn new<T: Into<f64> + Copy>(minimum: T, maximum: T, closed: bool) -> Self {
         Self {
-            base: BaseShape::default(),
+            base: BaseShape {
+                bounding_box: BoundingBox::new(
+                    Point::new(-1.0, minimum.into(), -1.0),
+                    Point::new(1.0, maximum.into(), 1.0),
+                ),
+                ..Default::default()
+            },
             minimum: minimum.into(),
             maximum: maximum.into(),
             closed,
@@ -69,6 +76,13 @@ impl Shape for Cylinder {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+
+    fn equals(&self, other: &dyn Shape) -> bool {
+        other
+            .as_any()
+            .downcast_ref::<Cylinder>()
+            .map_or(false, |a| self == a)
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
@@ -267,5 +281,28 @@ mod tests {
             let n = cyl.local_normal_at(test.0, &Intersection::new(-100.0, &cyl));
             assert_eq!(n, test.1);
         }
+    }
+
+    #[test]
+    fn unbounded_cylinder_bounding_box() {
+        let s = Cylinder::default();
+        let bb = s.get_bounds();
+
+        assert!(equal(bb.get_min().x, -1.0));
+        assert!(bb.get_min().y.is_infinite() && bb.get_min().y < 0.0);
+        assert!(equal(bb.get_min().z, -1.0));
+
+        assert!(equal(bb.get_max().x, 1.0));
+        assert!(bb.get_max().y.is_infinite() && bb.get_max().y > 0.0);
+        assert!(equal(bb.get_max().z, 1.0));
+    }
+
+    #[test]
+    fn bounded_cylinder_bounding_box() {
+        let s = Cylinder::new(-5, 3, false);
+        let bb = s.get_bounds();
+
+        assert_eq!(bb.get_min(), Point::new(-1, -5, -1));
+        assert_eq!(bb.get_max(), Point::new(1, 3, 1));
     }
 }

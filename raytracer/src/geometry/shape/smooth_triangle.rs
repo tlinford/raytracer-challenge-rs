@@ -1,6 +1,7 @@
 use std::{any::Any, vec};
 
 use crate::{
+    bounding_box::BoundingBox,
     geometry::{intersection::Intersection, BaseShape, Shape},
     point::Point,
     ray::Ray,
@@ -24,10 +25,18 @@ pub struct SmoothTriangle {
 
 impl SmoothTriangle {
     pub fn new(p1: Point, p2: Point, p3: Point, n1: Vector, n2: Vector, n3: Vector) -> Self {
+        let mut bb = BoundingBox::default();
+        bb.add(p1);
+        bb.add(p2);
+        bb.add(p3);
+
         let e1 = p2 - p1;
         let e2 = p3 - p1;
         Self {
-            base: BaseShape::default(),
+            base: BaseShape {
+                bounding_box: bb,
+                ..Default::default()
+            },
             p1,
             p2,
             p3,
@@ -52,6 +61,13 @@ impl Shape for SmoothTriangle {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+
+    fn equals(&self, other: &dyn Shape) -> bool {
+        other
+            .as_any()
+            .downcast_ref::<SmoothTriangle>()
+            .map_or(false, |a| self == a)
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
@@ -166,5 +182,22 @@ mod tests {
         let xs = vec![i];
         let comps = i.prepare_computations(&r, &xs);
         assert_eq!(comps.normalv, Vector::new(-0.5547, 0.83205, 0.0));
+    }
+
+    #[test]
+    fn triangle_bounding_box() {
+        let p1 = Point::new(-3, 7, 2);
+        let p2 = Point::new(6, 2, -4);
+        let p3 = Point::new(2, -1, -1);
+
+        let n1 = Vector::new(0, 1, 0);
+        let n2 = Vector::new(-1, 0, 0);
+        let n3 = Vector::new(1, 0, 0);
+
+        let s = SmoothTriangle::new(p1, p2, p3, n1, n2, n3);
+        let bb = s.get_bounds();
+
+        assert_eq!(bb.get_min(), Point::new(-3, -1, -4));
+        assert_eq!(bb.get_max(), Point::new(6, 7, 2));
     }
 }

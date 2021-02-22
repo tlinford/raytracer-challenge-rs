@@ -97,6 +97,14 @@ impl Shape for Csg {
         self
     }
 
+    fn equals(&self, other: &dyn Shape) -> bool {
+        other.as_any().downcast_ref::<Csg>().map_or(false, |a| {
+            self.get_base() == other.get_base()
+                && self.left.as_ref() == a.left.as_ref()
+                && self.right.as_ref() == a.right.as_ref()
+        })
+    }
+
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
         let mut leftxs = self.left.intersect(ray);
         let rightxs = self.right.intersect(ray);

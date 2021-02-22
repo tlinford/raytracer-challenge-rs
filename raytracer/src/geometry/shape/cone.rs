@@ -1,6 +1,7 @@
 use std::any::Any;
 
 use crate::{
+    bounding_box::BoundingBox,
     geometry::{intersection::Intersection, BaseShape, Shape},
     point::Point,
     ray::Ray,
@@ -24,10 +25,22 @@ impl Default for Cone {
 
 impl Cone {
     pub fn new<T: Into<f64> + Copy>(minimum: T, maximum: T, closed: bool) -> Self {
+        let min = minimum.into();
+        let max = maximum.into();
+        let a = min.abs();
+        let b = max.abs();
+        let limit = a.max(b);
+
         Self {
-            base: BaseShape::default(),
-            minimum: minimum.into(),
-            maximum: maximum.into(),
+            base: BaseShape {
+                bounding_box: BoundingBox::new(
+                    Point::new(-limit, min, -limit),
+                    Point::new(limit, max, limit),
+                ),
+                ..BaseShape::default()
+            },
+            minimum: min,
+            maximum: max,
             closed,
         }
     }
@@ -69,6 +82,13 @@ impl Shape for Cone {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+
+    fn equals(&self, other: &dyn Shape) -> bool {
+        other
+            .as_any()
+            .downcast_ref::<Cone>()
+            .map_or(false, |a| self == a)
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
@@ -225,5 +245,28 @@ mod tests {
             let n = shape.local_normal_at(test.0, &Intersection::new(-100.0, &shape));
             assert_eq!(n, test.1);
         }
+    }
+
+    #[test]
+    fn unbounded_cone_bounding_box() {
+        let s = Cone::default();
+        let bb = s.get_bounds();
+
+        assert!(bb.get_min().x.is_infinite() && bb.get_min().x < 0.0);
+        assert!(bb.get_min().y.is_infinite() && bb.get_min().y < 0.0);
+        assert!(bb.get_min().z.is_infinite() && bb.get_min().z < 0.0);
+
+        assert!(bb.get_max().x.is_infinite() && bb.get_max().x > 0.0);
+        assert!(bb.get_max().y.is_infinite() && bb.get_max().y > 0.0);
+        assert!(bb.get_max().z.is_infinite() && bb.get_max().z > 0.0);
+    }
+
+    #[test]
+    fn bounded_cone_bounding_box() {
+        let s = Cone::new(-5, 3, false);
+        let bb = s.get_bounds();
+
+        assert_eq!(bb.get_min(), Point::new(-5, -5, -5));
+        assert_eq!(bb.get_max(), Point::new(5, 3, 5));
     }
 }

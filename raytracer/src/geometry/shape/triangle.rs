@@ -1,6 +1,7 @@
 use std::any::Any;
 
 use crate::{
+    bounding_box::BoundingBox,
     geometry::{intersection::Intersection, BaseShape, Shape},
     point::Point,
     ray::Ray,
@@ -21,10 +22,18 @@ pub struct Triangle {
 
 impl Triangle {
     pub fn new(p1: Point, p2: Point, p3: Point) -> Self {
+        let mut bb = BoundingBox::default();
+        bb.add(p1);
+        bb.add(p2);
+        bb.add(p3);
+
         let e1 = p2 - p1;
         let e2 = p3 - p1;
         Self {
-            base: BaseShape::default(),
+            base: BaseShape {
+                bounding_box: bb,
+                ..BaseShape::default()
+            },
             p1,
             p2,
             p3,
@@ -46,6 +55,13 @@ impl Shape for Triangle {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+
+    fn equals(&self, other: &dyn Shape) -> bool {
+        other
+            .as_any()
+            .downcast_ref::<Triangle>()
+            .map_or(false, |a| self == a)
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
@@ -177,5 +193,17 @@ mod tests {
         let xs = t.local_intersect(&r);
         assert_eq!(xs.len(), 1);
         assert!(equal(xs[0].t(), 2.0));
+    }
+
+    #[test]
+    fn triangle_bounding_box() {
+        let p1 = Point::new(-3, 7, 2);
+        let p2 = Point::new(6, 2, -4);
+        let p3 = Point::new(2, -1, -1);
+        let s = Triangle::new(p1, p2, p3);
+        let bb = s.get_bounds();
+
+        assert_eq!(bb.get_min(), Point::new(-3, -1, -4));
+        assert_eq!(bb.get_max(), Point::new(6, 7, 2));
     }
 }

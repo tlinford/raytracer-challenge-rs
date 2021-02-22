@@ -1,7 +1,10 @@
 pub mod intersection;
 pub mod shape;
 
-use crate::{material::Material, matrix::Matrix, point::Point, ray::Ray, vector::Vector};
+use crate::{
+    bounding_box::BoundingBox, material::Material, matrix::Matrix, point::Point, ray::Ray,
+    vector::Vector,
+};
 use std::{any::Any, fmt::Debug, ptr};
 
 use self::intersection::Intersection;
@@ -12,6 +15,7 @@ pub struct BaseShape {
     pub transform_inverse: Matrix,
     transform_inverse_transpose: Matrix,
     pub material: Material,
+    bounding_box: BoundingBox,
 }
 
 impl Default for BaseShape {
@@ -24,6 +28,7 @@ impl Default for BaseShape {
             transform_inverse,
             transform_inverse_transpose,
             material: Material::default(),
+            bounding_box: BoundingBox::default(),
         }
     }
 }
@@ -34,6 +39,7 @@ pub trait Shape: Debug + Send + Sync {
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection>;
     fn local_normal_at(&self, point: Point, intersection: &Intersection) -> Vector;
     fn as_any(&self) -> &dyn Any;
+    fn equals(&self, other: &dyn Shape) -> bool;
 
     fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
         let local_ray = ray.transform(&self.get_base().transform_inverse);
@@ -74,11 +80,15 @@ pub trait Shape: Debug + Send + Sync {
     fn includes(&self, other: &dyn Shape) -> bool {
         ptr::eq(self.get_base(), other.get_base())
     }
+
+    fn get_bounds(&self) -> &BoundingBox {
+        &self.get_base().bounding_box
+    }
 }
 
 impl<'a, 'b> PartialEq<dyn Shape + 'b> for dyn Shape + 'a {
     fn eq(&self, other: &dyn Shape) -> bool {
-        self.get_base() == other.get_base()
+        self.equals(other)
     }
 }
 
