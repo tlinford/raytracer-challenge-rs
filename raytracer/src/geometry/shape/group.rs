@@ -1,6 +1,7 @@
 use std::{any::Any, vec};
 
 use crate::{
+    bounding_box::BoundingBox,
     geometry::{intersection::Intersection, BaseShape, Shape},
     material::Material,
     matrix::Matrix,
@@ -76,10 +77,14 @@ impl Shape for Group {
         self.get_base_mut().transform_inverse_transpose = inverse_transpose;
 
         let transform = &self.get_base().transform.clone();
+        let mut new_bb = BoundingBox::default();
 
         for child in &mut self.children {
             child.set_transform(transform * &child.get_base().transform);
+            let cbox = child.parent_space_bounds();
+            new_bb.add_bounding_box(&cbox);
         }
+        self.get_base_mut().bounding_box = new_bb;
     }
 
     fn set_material(&mut self, material: Material) {
@@ -98,6 +103,8 @@ impl Shape for Group {
 impl Group {
     pub fn add_child(&mut self, mut shape: Box<dyn Shape>) {
         shape.set_transform(&self.get_base().transform * &shape.get_base().transform);
+        let cbox = shape.parent_space_bounds();
+        self.get_base_mut().bounding_box.add_bounding_box(&cbox);
         self.children.push(shape);
     }
 }
@@ -106,7 +113,11 @@ impl Group {
 mod tests {
 
     use crate::{
-        geometry::{intersection::intersections, shape::Sphere},
+        geometry::{
+            intersection::intersections,
+            shape::{Cylinder, Sphere},
+            Shape,
+        },
         matrix::Matrix,
         transform::{scaling, translation},
     };
@@ -176,5 +187,22 @@ mod tests {
         let xs = g.intersect(&r);
 
         assert_eq!(xs.len(), 2);
+    }
+
+    #[test]
+    fn group_bounding_box_contains_its_children() {
+        let mut s = Sphere::default();
+        s.set_transform(&translation(2, 5, -3) * &scaling(2, 2, 2));
+
+        let mut c = Cylinder::new(-2, 2, false);
+        c.set_transform(&translation(-4, -1, 4) * &scaling(0.5, 1.0, 0.5));
+
+        let mut shape = Group::default();
+        shape.add_child(Box::new(s));
+        shape.add_child(Box::new(c));
+
+        let bb = shape.get_bounds();
+        assert_eq!(bb.get_min(), Point::new(-4.5, -3.0, -5.0));
+        assert_eq!(bb.get_max(), Point::new(4.0, 7.0, 4.5));
     }
 }

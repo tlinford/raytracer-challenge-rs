@@ -26,9 +26,9 @@ pub struct SmoothTriangle {
 impl SmoothTriangle {
     pub fn new(p1: Point, p2: Point, p3: Point, n1: Vector, n2: Vector, n3: Vector) -> Self {
         let mut bb = BoundingBox::default();
-        bb.add(p1);
-        bb.add(p2);
-        bb.add(p3);
+        bb.add_point(p1);
+        bb.add_point(p2);
+        bb.add_point(p3);
 
         let e1 = p2 - p1;
         let e2 = p3 - p1;

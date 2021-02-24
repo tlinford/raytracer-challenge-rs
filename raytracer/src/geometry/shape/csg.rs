@@ -1,6 +1,7 @@
 use std::any::Any;
 
 use crate::{
+    bounding_box::BoundingBox,
     geometry::{
         intersection::{intersections, Intersection},
         BaseShape, Shape,
@@ -53,8 +54,14 @@ impl Csg {
         left: L,
         right: R,
     ) -> Self {
+        let mut bb = BoundingBox::default();
+        bb.add_bounding_box(&left.parent_space_bounds());
+        bb.add_bounding_box(&right.parent_space_bounds());
         Self {
-            base: BaseShape::default(),
+            base: BaseShape {
+                bounding_box: bb,
+                ..Default::default()
+            },
             operation,
             left: Box::new(left),
             right: Box::new(right),
@@ -127,7 +134,10 @@ impl Shape for Csg {
 mod tests {
     use crate::{
         equal,
-        geometry::shape::{Cube, Sphere},
+        geometry::{
+            shape::{Cube, Sphere},
+            Shape,
+        },
         transform::translation,
     };
 
@@ -267,5 +277,18 @@ mod tests {
         assert_eq!(xs.len(), 2);
         assert!(equal(xs[0].t(), 4.0));
         assert!(equal(xs[1].t(), 6.5));
+    }
+
+    #[test]
+    fn csg_bounding_box_contains_its_children() {
+        let left = Sphere::default();
+        let mut right = Sphere::default();
+        right.set_transform(translation(2, 3, 4));
+
+        let shape = Csg::new(Operation::Difference, left, right);
+        let bb = shape.get_bounds();
+
+        assert_eq!(bb.get_min(), Point::new(-1, -1, -1));
+        assert_eq!(bb.get_max(), Point::new(3, 4, 5));
     }
 }

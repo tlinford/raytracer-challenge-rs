@@ -84,6 +84,10 @@ pub trait Shape: Debug + Send + Sync {
     fn get_bounds(&self) -> &BoundingBox {
         &self.get_base().bounding_box
     }
+
+    fn parent_space_bounds(&self) -> BoundingBox {
+        self.get_bounds().transform(self.transform())
+    }
 }
 
 impl<'a, 'b> PartialEq<dyn Shape + 'b> for dyn Shape + 'a {
