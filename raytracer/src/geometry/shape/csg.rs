@@ -44,8 +44,8 @@ impl Operation {
 pub struct Csg {
     base: BaseShape,
     operation: Operation,
-    left: Box<dyn Shape>,
-    right: Box<dyn Shape>,
+    pub left: Box<dyn Shape>,
+    pub right: Box<dyn Shape>,
 }
 
 impl Csg {
@@ -113,6 +113,10 @@ impl Shape for Csg {
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+        if !self.get_bounds().intersects(ray) {
+            return vec![];
+        }
+
         let mut leftxs = self.left.intersect(ray);
         let rightxs = self.right.intersect(ray);
 

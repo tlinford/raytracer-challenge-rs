@@ -9,9 +9,9 @@ use crate::{
 };
 
 #[derive(Debug)]
-struct TestShape {
+pub struct TestShape {
     base: BaseShape,
-    saved_ray: RwLock<Ray>,
+    pub saved_ray: RwLock<Ray>,
 }
 
 impl Default for TestShape {

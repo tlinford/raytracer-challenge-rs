@@ -7,7 +7,7 @@ use raytracer::{
     camera::{self, Camera},
     color::Color,
     geometry::{shape::Plane, Shape},
-    image::ppm::save_ppm,
+    image::{ppm::save_ppm, ExportCanvas},
     light::PointLight,
     material::Material,
     matrix::Matrix,
@@ -39,7 +39,7 @@ fn main() -> Result<()> {
     floor.set_material(floor_material);
     world.add_object(floor);
 
-    let mut parser1 = parse_obj_file(Path::new("raytracer/src/bin/teapot-low.obj")).unwrap();
+    let mut parser1 = parse_obj_file(Path::new("raytracer/models/teapot-low.obj")).unwrap();
     let mut teapot_smooth = parser1.as_group();
     teapot_smooth.set_transform(
         Matrix::identity(4, 4)
@@ -58,7 +58,7 @@ fn main() -> Result<()> {
 
     teapot_smooth.set_material(material.clone());
 
-    let mut parser2 = parse_obj_file(Path::new("raytracer/src/bin/teapot_hr.obj")).unwrap();
+    let mut parser2 = parse_obj_file(Path::new("raytracer/models/teapot_hr.obj")).unwrap();
     let mut teapot = parser2.as_group();
     teapot.set_material(material);
     teapot.set_transform(
@@ -79,8 +79,9 @@ fn main() -> Result<()> {
     ));
 
     // let canvas = camera.render(&world);
-    let canvas = camera::Camera::render_multithreaded(Arc::new(camera), Arc::new(world), 1);
-    save_ppm(
+    let canvas = camera::Camera::render_multithreaded(Arc::new(camera), Arc::new(world), 16);
+    let exporter = raytracer::image::png::PngExporter {};
+    exporter.save(
         &canvas,
         Path::new("raytracer/renders/teapot_multithreaded.ppm"),
     )

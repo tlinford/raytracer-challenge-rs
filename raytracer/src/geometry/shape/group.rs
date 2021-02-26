@@ -47,6 +47,10 @@ impl Shape for Group {
     }
 
     fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
+        if !self.get_bounds().intersects(ray) {
+            return vec![];
+        }
+
         self.children
             .iter()
             .flat_map(|c| c.intersect(ray))

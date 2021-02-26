@@ -18,4 +18,5 @@ pub use self::group::Group;
 pub use self::plane::Plane;
 pub use self::smooth_triangle::SmoothTriangle;
 pub use self::sphere::Sphere;
+pub use self::test_shape::TestShape;
 pub use self::triangle::Triangle;
