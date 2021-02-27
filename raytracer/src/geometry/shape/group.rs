@@ -122,6 +122,8 @@ impl Shape for Group {
     }
 }
 
+type ShapesSplit = (Vec<Box<dyn Shape>>, Vec<Box<dyn Shape>>);
+
 impl Group {
     pub fn add_child(&mut self, mut shape: Box<dyn Shape>) {
         shape.set_transform(&self.get_base().transform * &shape.get_base().transform);
@@ -130,7 +132,7 @@ impl Group {
         self.children.push(shape);
     }
 
-    fn partition_children(&mut self) -> (Vec<Box<dyn Shape>>, Vec<Box<dyn Shape>>) {
+    fn partition_children(&mut self) -> ShapesSplit {
         let mut left = vec![];
         let mut right = vec![];
 

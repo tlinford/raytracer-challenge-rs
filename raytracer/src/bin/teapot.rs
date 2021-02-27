@@ -4,7 +4,6 @@ use anyhow::Result;
 
 use obj_parser::parse_obj_file;
 use raytracer::{
-    bounding_box::BoundingBox,
     camera::{self, Camera},
     color::Color,
     geometry::{shape::Plane, Shape},
