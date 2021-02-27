@@ -132,6 +132,11 @@ impl Shape for Csg {
     fn includes(&self, other: &dyn Shape) -> bool {
         self.left.includes(other) || self.right.includes(other)
     }
+
+    fn divide(&mut self, threshold: usize) {
+        self.left.divide(threshold);
+        self.right.divide(threshold);
+    }
 }
 
 #[cfg(test)]
@@ -139,7 +144,7 @@ mod tests {
     use crate::{
         equal,
         geometry::{
-            shape::{Cube, Sphere},
+            shape::{Cube, Group, Sphere},
             Shape,
         },
         transform::translation,
@@ -294,5 +299,61 @@ mod tests {
 
         assert_eq!(bb.get_min(), Point::new(-1, -1, -1));
         assert_eq!(bb.get_max(), Point::new(3, 4, 5));
+    }
+
+    #[test]
+    fn subdividing_csg_shape_subdivides_its_children() {
+        let mut s1 = Sphere::default();
+        s1.set_transform(translation(-1.5, 0.0, 0.0));
+
+        let mut s2 = Sphere::default();
+        s2.set_transform(translation(1.5, 0.0, 0.0));
+
+        let mut left = Group::default();
+        left.add_child(Box::new(s1));
+        left.add_child(Box::new(s2));
+
+        let mut s3 = Sphere::default();
+        s3.set_transform(translation(0.0, 0.0, -1.5));
+
+        let mut s4 = Sphere::default();
+        s4.set_transform(translation(0.0, 0.0, 1.5));
+
+        let mut right = Group::default();
+        right.add_child(Box::new(s3));
+        right.add_child(Box::new(s4));
+
+        let mut shape = Csg::new(Operation::Difference, left, right);
+        shape.divide(1);
+
+        let left = shape.left.as_any().downcast_ref::<Group>().unwrap();
+        let right = shape.right.as_any().downcast_ref::<Group>().unwrap();
+
+        let left_child_group0 = left.children[0].as_any().downcast_ref::<Group>().unwrap();
+        let s1 = left_child_group0.children[0]
+            .as_any()
+            .downcast_ref::<Sphere>()
+            .unwrap();
+        assert_eq!(s1.transform(), &translation(-1.5, 0.0, 0.0));
+
+        let left_child_group1 = left.children[1].as_any().downcast_ref::<Group>().unwrap();
+        let s2 = left_child_group1.children[0]
+            .as_any()
+            .downcast_ref::<Sphere>()
+            .unwrap();
+        assert_eq!(s2.transform(), &translation(1.5, 0.0, 0.0));
+
+        let right_child_group0 = right.children[0].as_any().downcast_ref::<Group>().unwrap();
+        let s3 = right_child_group0.children[0]
+            .as_any()
+            .downcast_ref::<Sphere>()
+            .unwrap();
+        assert_eq!(s3.transform(), &translation(0.0, 0.0, -1.5));
+        let right_child_group1 = right.children[1].as_any().downcast_ref::<Group>().unwrap();
+        let s4 = right_child_group1.children[0]
+            .as_any()
+            .downcast_ref::<Sphere>()
+            .unwrap();
+        assert_eq!(s4.transform(), &translation(0.0, 0.0, 1.5));
     }
 }

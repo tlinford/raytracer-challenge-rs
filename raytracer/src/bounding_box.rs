@@ -1,6 +1,6 @@
 use std::f64;
 
-use crate::{matrix::Matrix, point::Point, ray::Ray, EPSILON};
+use crate::{equal, matrix::Matrix, point::Point, ray::Ray, EPSILON};
 
 #[derive(Debug)]
 pub struct BoundingBox {
@@ -133,6 +133,39 @@ impl BoundingBox {
         } else {
             (tmin, tmax)
         }
+    }
+
+    pub fn split(&self) -> (BoundingBox, BoundingBox) {
+        let dx = (self.max.x - self.min.x).abs();
+        let dy = (self.max.y - self.min.y).abs();
+        let dz = (self.max.z - self.min.z).abs();
+
+        let greatest = dx.max(dy).max(dz);
+
+        let (mut x0, mut y0, mut z0) = (self.min.x, self.min.y, self.min.z);
+        let (mut x1, mut y1, mut z1) = (self.max.x, self.max.y, self.max.z);
+
+        if equal(greatest, dx) {
+            let midx = x0 + dx / 2.0;
+            x0 = midx;
+            x1 = midx;
+        } else if equal(greatest, dy) {
+            let midy = y0 + dy / 2.0;
+            y0 = midy;
+            y1 = midy;
+        } else {
+            let midz = z0 + dz / 2.0;
+            z0 = midz;
+            z1 = midz;
+        }
+
+        let mid_min = Point::new(x0, y0, z0);
+        let mid_max = Point::new(x1, y1, z1);
+
+        let left = BoundingBox::new(self.min, mid_max);
+        let right = BoundingBox::new(mid_min, self.max);
+
+        (left, right)
     }
 }
 
@@ -417,5 +450,60 @@ mod tests {
         let right = &shape.right.as_any().downcast_ref::<TestShape>().unwrap();
         assert_eq!(right.saved_ray.read().unwrap().origin(), r.origin());
         assert_eq!(right.saved_ray.read().unwrap().direction(), r.direction());
+    }
+
+    #[test]
+    fn splitting_perfect_cube() {
+        let bb = BoundingBox::new(Point::new(-1, -4, -5), Point::new(9, 6, 5));
+        let (left, right) = bb.split();
+
+        assert_eq!(left.get_min(), Point::new(-1, -4, -5));
+        assert_eq!(left.get_max(), Point::new(4, 6, 5));
+
+        assert_eq!(right.get_min(), Point::new(4, -4, -5));
+        assert_eq!(right.get_max(), Point::new(9, 6, 5));
+    }
+
+    #[test]
+    fn splitting_x_wide_box() {
+        let bb = BoundingBox::new(Point::new(-1, -2, -3), Point::new(9.0, 5.5, 3.0));
+        let (left, right) = bb.split();
+
+        assert_eq!(left.get_min(), Point::new(-1, -2, -3));
+        assert_eq!(left.get_max(), Point::new(4.0, 5.5, 3.0));
+
+        assert_eq!(right.get_min(), Point::new(4.0, -2.0, -3.0));
+        assert_eq!(right.get_max(), Point::new(9.0, 5.5, 3.0));
+    }
+
+    #[test]
+    fn splitting_y_wide_box() {
+        let bb = BoundingBox::new(Point::new(-1, -2, -3), Point::new(5, 8, 3));
+        let (left, right) = bb.split();
+
+        assert_eq!(left.get_min(), Point::new(-1, -2, -3));
+        assert_eq!(left.get_max(), Point::new(5, 3, 3));
+
+        assert_eq!(right.get_min(), Point::new(-1, 3, -3));
+        assert_eq!(right.get_max(), Point::new(5, 8, 3));
+    }
+
+    #[test]
+    fn splitting_yzwide_box() {
+        let bb = BoundingBox::new(Point::new(-1, -2, -3), Point::new(5, 3, 7));
+        let (left, right) = bb.split();
+
+        assert_eq!(left.get_min(), Point::new(-1, -2, -3));
+        assert_eq!(left.get_max(), Point::new(5, 3, 2));
+
+        assert_eq!(right.get_min(), Point::new(-1, -2, 2));
+        assert_eq!(right.get_max(), Point::new(5, 3, 7));
+    }
+
+    #[test]
+    fn subdividing_a_primitive_does_nothing() {
+        let mut shape = Sphere::default();
+        shape.divide(1);
+        assert_eq!(shape, Sphere::default());
     }
 }

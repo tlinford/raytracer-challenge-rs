@@ -15,7 +15,7 @@ pub struct BaseShape {
     pub transform_inverse: Matrix,
     transform_inverse_transpose: Matrix,
     pub material: Material,
-    bounding_box: BoundingBox,
+    pub bounding_box: BoundingBox,
 }
 
 impl Default for BaseShape {
@@ -70,11 +70,16 @@ pub trait Shape: Debug + Send + Sync {
     }
 
     fn set_transform(&mut self, transform: Matrix) {
+        self.get_base_mut().bounding_box = self
+            .get_bounds()
+            .transform(&self.get_base().transform_inverse);
         let inverse = transform.inverse();
         let inverse_transpose = inverse.transpose();
         self.get_base_mut().transform = transform;
         self.get_base_mut().transform_inverse = inverse;
         self.get_base_mut().transform_inverse_transpose = inverse_transpose;
+
+        self.get_base_mut().bounding_box = self.get_bounds().transform(self.transform());
     }
 
     fn includes(&self, other: &dyn Shape) -> bool {
@@ -86,8 +91,10 @@ pub trait Shape: Debug + Send + Sync {
     }
 
     fn parent_space_bounds(&self) -> BoundingBox {
-        self.get_bounds().transform(self.transform())
+        self.get_bounds().transform(&Matrix::identity(4, 4))
     }
+
+    fn divide(&mut self, _threshold: usize) {}
 }
 
 impl<'a, 'b> PartialEq<dyn Shape + 'b> for dyn Shape + 'a {

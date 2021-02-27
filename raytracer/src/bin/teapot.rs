@@ -4,10 +4,11 @@ use anyhow::Result;
 
 use obj_parser::parse_obj_file;
 use raytracer::{
+    bounding_box::BoundingBox,
     camera::{self, Camera},
     color::Color,
     geometry::{shape::Plane, Shape},
-    image::{ppm::save_ppm, ExportCanvas},
+    image::ExportCanvas,
     light::PointLight,
     material::Material,
     matrix::Matrix,
@@ -41,12 +42,21 @@ fn main() -> Result<()> {
 
     let mut parser1 = parse_obj_file(Path::new("raytracer/models/teapot-low.obj")).unwrap();
     let mut teapot_smooth = parser1.as_group();
+    println!(
+        "smooth teapot bounds before transform: {:?}",
+        teapot_smooth.get_bounds()
+    );
     teapot_smooth.set_transform(
         Matrix::identity(4, 4)
             .scale(0.12, 0.12, 0.12)
             .rotate_x(-PI / 2.0)
             .rotate_y(PI / 7.0)
             .translate(1.5, 0.0, 0.0),
+    );
+
+    println!(
+        "smooth teapot bounds after transform : {:?}",
+        teapot_smooth.get_bounds()
     );
 
     let mut material = Material::default();
@@ -60,6 +70,10 @@ fn main() -> Result<()> {
 
     let mut parser2 = parse_obj_file(Path::new("raytracer/models/teapot_hr.obj")).unwrap();
     let mut teapot = parser2.as_group();
+    println!(
+        "teapot bounds before transform:        {:?}",
+        teapot.get_bounds()
+    );
     teapot.set_material(material);
     teapot.set_transform(
         Matrix::identity(4, 4)
@@ -67,6 +81,12 @@ fn main() -> Result<()> {
             .rotate_y(PI / 5.0)
             .translate(-1.9, 0.0, 0.0),
     );
+    println!(
+        "teapot bounds after transform:        {:?}",
+        teapot.get_bounds()
+    );
+
+    teapot.divide(1000);
 
     world.add_object(teapot_smooth);
     world.add_object(teapot);
@@ -83,6 +103,6 @@ fn main() -> Result<()> {
     let exporter = raytracer::image::png::PngExporter {};
     exporter.save(
         &canvas,
-        Path::new("raytracer/renders/teapot_multithreaded.ppm"),
+        Path::new("raytracer/renders/teapot_multithreaded_debug.png"),
     )
 }
