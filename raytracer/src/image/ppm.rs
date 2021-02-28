@@ -5,6 +5,7 @@ use crate::{canvas::Canvas, color::Color};
 
 use super::ExportCanvas;
 
+#[derive(Debug)]
 pub struct PpmExporter {}
 
 impl ExportCanvas for PpmExporter {

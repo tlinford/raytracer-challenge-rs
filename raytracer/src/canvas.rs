@@ -1,10 +1,15 @@
-use crate::color::Color;
+use std::path::Path;
+
+use anyhow::Result;
+
+use crate::{color::Color, image::png::PngExporter, image::ExportCanvas};
 
 #[derive(Debug)]
 pub struct Canvas {
     width: usize,
     height: usize,
     pixels: Vec<Color>,
+    exporter: Box<dyn ExportCanvas>,
 }
 
 impl Canvas {
@@ -15,6 +20,7 @@ impl Canvas {
             width,
             height,
             pixels,
+            exporter: Box::new(PngExporter {}),
         }
     }
 
@@ -39,6 +45,10 @@ impl Canvas {
         assert!(x < self.width);
         assert!(y < self.height);
         y * self.width + x
+    }
+
+    pub fn save(&self, path: &Path) -> Result<()> {
+        self.exporter.save(&self, path)
     }
 }
 

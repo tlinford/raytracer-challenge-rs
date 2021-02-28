@@ -6,6 +6,7 @@ use image::{ImageBuffer, RgbImage};
 use super::ExportCanvas;
 use crate::canvas::Canvas;
 
+#[derive(Debug)]
 pub struct PngExporter {}
 
 impl ExportCanvas for PngExporter {
