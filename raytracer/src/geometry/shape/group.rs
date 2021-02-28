@@ -193,7 +193,7 @@ impl Group {
         for shape in shapes {
             g.add_child(shape);
         }
-        self.add_child(Box::new(g));
+        self.children.push(Box::new(g));
     }
 }
 
@@ -369,7 +369,6 @@ mod tests {
         let subgroup = g.children[1].as_any().downcast_ref::<Group>().unwrap();
         assert_eq!(subgroup.children.len(), 2);
 
-        println!("subgroup child 0: {:?}", subgroup.children[0]);
         let subgroup_child0 = subgroup.children[0]
             .as_any()
             .downcast_ref::<Group>()
@@ -380,7 +379,6 @@ mod tests {
             .unwrap();
         assert_eq!(s1.transform(), &translation(-2, -2, 0));
 
-        println!("subgroup child 1: {:?}", subgroup.children[1]);
         let subgroup_child1 = subgroup.children[1]
             .as_any()
             .downcast_ref::<Group>()
