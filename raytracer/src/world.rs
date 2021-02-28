@@ -2,7 +2,7 @@ use crate::{
     color::Color,
     equal,
     geometry::{
-        intersection::{hit, intersections, Computations, Intersection},
+        intersection::{hit, intersections, shadow_hit, Computations, Intersection},
         shape::Sphere,
         Shape,
     },
@@ -99,7 +99,7 @@ impl World {
 
         let r = Ray::new(point, direction);
         let intersections = self.intersect(&r);
-        let h = hit(&intersections);
+        let h = shadow_hit(&intersections);
 
         h.is_some() && h.unwrap().t() < distance
     }

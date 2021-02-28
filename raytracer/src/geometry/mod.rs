@@ -15,7 +15,8 @@ pub struct BaseShape {
     pub transform_inverse: Matrix,
     transform_inverse_transpose: Matrix,
     pub material: Material,
-    pub bounding_box: BoundingBox,
+    bounding_box: BoundingBox,
+    shadow: bool,
 }
 
 impl Default for BaseShape {
@@ -29,6 +30,7 @@ impl Default for BaseShape {
             transform_inverse_transpose,
             material: Material::default(),
             bounding_box: BoundingBox::default(),
+            shadow: true,
         }
     }
 }
@@ -95,6 +97,14 @@ pub trait Shape: Debug + Send + Sync {
     }
 
     fn divide(&mut self, _threshold: usize) {}
+
+    fn has_shadow(&self) -> bool {
+        self.get_base().shadow
+    }
+
+    fn no_shadow(&mut self) {
+        self.get_base_mut().shadow = false;
+    }
 }
 
 impl<'a, 'b> PartialEq<dyn Shape + 'b> for dyn Shape + 'a {

@@ -119,6 +119,11 @@ pub fn hit<'a>(xs: &'a [Intersection<'a>]) -> Option<&'a Intersection<'a>> {
     xs.iter().find(|&&i| i.t() >= 0.0)
 }
 
+pub fn shadow_hit<'a>(xs: &'a [Intersection<'a>]) -> Option<&'a Intersection<'a>> {
+    xs.iter()
+        .find(|&&i| i.t() >= 0.0 && i.object().has_shadow())
+}
+
 // TODO: figure out how to make this work
 // pub struct Intersections<'a> {
 //     xs: Vec<Intersection<'a>>,
@@ -394,5 +399,21 @@ mod tests {
         let i = Intersection::new_with_uv(3.5, &s, 0.2, 0.4);
         assert!(equal(i.u.unwrap(), 0.2));
         assert!(equal(i.v.unwrap(), 0.4));
+    }
+
+    #[test]
+    fn skip_hits_with_no_shadow() {
+        let mut s1 = Sphere::default();
+        s1.no_shadow();
+        let i1 = Intersection::new(1.0, &s1);
+        let i2 = Intersection::new(2.0, &s1);
+
+        let s2 = Sphere::default();
+        let i3 = Intersection::new(1.0, &s2);
+        let i4 = Intersection::new(2.0, &s2);
+
+        let xs = intersections(&[i1, i2, i3, i4]);
+        let i = shadow_hit(&xs);
+        assert_eq!(*i.unwrap(), i3);
     }
 }
