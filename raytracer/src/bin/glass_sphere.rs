@@ -1,12 +1,11 @@
-use std::{f64::consts::FRAC_PI_2, path::Path};
+use std::{f64::consts::FRAC_PI_2, path::Path, sync::Arc};
 
 use anyhow::Result;
 
 use raytracer::{
-    camera::Camera,
+    camera::{self, Camera},
     color::Color,
     geometry::{shape::Plane, shape::Sphere, Shape},
-    image::ppm::save_ppm,
     light::PointLight,
     pattern::checkers_pattern,
     point::Point,
@@ -18,12 +17,16 @@ use raytracer::{
 fn main() -> Result<()> {
     let mut world = World::new();
 
-    let mut camera = Camera::new(2560, 2560, 0.45);
+    let mut camera = Camera::new(3840, 3840, 0.45);
     camera.set_transform(view_transform(
         Point::new(0, 0, -5),
         Point::origin(),
         Vector::new(0, 1, 0),
     ));
+    camera.render_opts.num_threads(16);
+    camera
+        .render_opts
+        .aa_samples(raytracer::camera::AASamples::X16);
 
     let light = PointLight::new(Point::new(2.0, 10.0, -5.0), Color::new(0.9, 0.9, 0.9));
     world.add_light(light);
@@ -62,6 +65,6 @@ fn main() -> Result<()> {
     center.get_base_mut().material.refractive_index = 1.0000034;
     world.add_object(center);
 
-    let canvas = camera.render(&world);
-    save_ppm(&canvas, Path::new("renders/glass_sphere.ppm"))
+    let canvas = camera::Camera::render_multithreaded(Arc::new(camera), Arc::new(world));
+    canvas.save(Path::new("raytracer/renders/glass_sphere.png"))
 }

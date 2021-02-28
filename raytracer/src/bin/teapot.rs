@@ -53,6 +53,8 @@ fn main() -> Result<()> {
             .translate(1.5, 0.0, 0.0),
     );
 
+    teapot_smooth.divide(5);
+
     println!(
         "smooth teapot bounds after transform : {:?}",
         teapot_smooth.get_bounds()
@@ -69,10 +71,6 @@ fn main() -> Result<()> {
 
     let mut parser2 = parse_obj_file(Path::new("raytracer/models/teapot_hr.obj")).unwrap();
     let mut teapot = parser2.as_group();
-    println!(
-        "teapot bounds before transform:        {:?}",
-        teapot.get_bounds()
-    );
     teapot.set_material(material);
     teapot.set_transform(
         Matrix::identity(4, 4)
@@ -80,28 +78,23 @@ fn main() -> Result<()> {
             .rotate_y(PI / 5.0)
             .translate(-1.9, 0.0, 0.0),
     );
-    println!(
-        "teapot bounds after transform:        {:?}",
-        teapot.get_bounds()
-    );
 
     teapot.divide(1000);
 
     world.add_object(teapot_smooth);
     world.add_object(teapot);
 
-    let mut camera = Camera::new(2560, 1440, PI / 3.0);
+    let mut camera = Camera::new(3840, 2160, PI / 3.0);
     camera.set_transform(view_transform(
         Point::new(0.0, 2.5, -7.0),
         Point::new(0.0, 1.25, 0.0),
         Vector::new(0, 1, 0),
     ));
+    camera.render_opts.num_threads(16);
+    camera.render_opts.aa_samples(camera::AASamples::X16);
 
     // let canvas = camera.render(&world);
-    let canvas = camera::Camera::render_multithreaded(Arc::new(camera), Arc::new(world), 16);
+    let canvas = camera::Camera::render_multithreaded(Arc::new(camera), Arc::new(world));
     let exporter = raytracer::image::png::PngExporter {};
-    exporter.save(
-        &canvas,
-        Path::new("raytracer/renders/teapot_multithreaded_debug.png"),
-    )
+    exporter.save(&canvas, Path::new("raytracer/renders/teapot_4k_aax16.png"))
 }

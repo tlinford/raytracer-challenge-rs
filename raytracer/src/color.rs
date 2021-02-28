@@ -22,6 +22,15 @@ impl Color {
     pub fn white() -> Self {
         Self::new(1.0, 1.0, 1.0)
     }
+
+    pub fn average(colors: &[Color]) -> Color {
+        let mut avg_color = Color::black();
+        for &color in colors {
+            avg_color = avg_color + color;
+        }
+        avg_color = avg_color * (1.0 / colors.len() as f64);
+        avg_color
+    }
 }
 
 impl PartialEq for Color {

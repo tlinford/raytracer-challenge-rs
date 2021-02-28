@@ -26,6 +26,7 @@ pub struct Camera {
     pixel_size: f64,
     half_width: f64,
     half_height: f64,
+    pub render_opts: RenderOpts,
 }
 
 impl Camera {
@@ -49,6 +50,7 @@ impl Camera {
             pixel_size,
             half_width,
             half_height,
+            render_opts: RenderOpts::default(),
         }
     }
 
@@ -66,12 +68,69 @@ impl Camera {
         Ray::new(origin, direction)
     }
 
+    pub fn rays_for_pixel(&self, px: usize, py: usize) -> Vec<Ray> {
+        let mut rays = vec![];
+        let offsets = Self::get_offsets(&self.render_opts.aa_samples);
+
+        for offset in offsets.iter() {
+            let xoffset = (px as f64 + offset.0) * self.pixel_size;
+            let yoffset = (py as f64 + offset.1) * self.pixel_size;
+
+            let world_x = self.half_width - xoffset;
+            let world_y = self.half_height - yoffset;
+
+            let pixel = &self.transform_inverse * Point::new(world_x, world_y, -1.0);
+            let origin = &self.transform_inverse * Point::origin();
+            let direction = (pixel - origin).normalize();
+
+            rays.push(Ray::new(origin, direction));
+        }
+
+        rays
+    }
+
+    fn get_offsets(samples: &AASamples) -> Vec<(f64, f64)> {
+        match samples {
+            AASamples::X1 => vec![(0.5, 0.5)],
+            AASamples::X2 => vec![(0.25, 0.5), (0.75, 0.5)],
+            AASamples::X4 => vec![(0.25, 0.25), (0.75, 0.25), (0.25, 0.75), (0.75, 0.75)],
+            AASamples::X8 => vec![
+                (0.25, 0.25),
+                (0.5, 0.25),
+                (0.75, 0.25),
+                (0.25, 0.5),
+                (0.75, 0.5),
+                (0.25, 0.75),
+                (0.5, 0.75),
+                (0.75, 0.75),
+            ],
+            AASamples::X16 => vec![
+                (0.125, 0.125),
+                (0.375, 0.125),
+                (0.625, 0.125),
+                (0.875, 0.125),
+                (0.125, 0.375),
+                (0.375, 0.375),
+                (0.625, 0.375),
+                (0.875, 0.375),
+                (0.125, 0.625),
+                (0.375, 0.625),
+                (0.625, 0.625),
+                (0.875, 0.625),
+                (0.125, 0.875),
+                (0.375, 0.875),
+                (0.625, 0.875),
+                (0.875, 0.875),
+            ],
+        }
+    }
+
     pub fn set_transform(&mut self, transform: Matrix) {
         self.transform = transform;
         self.transform_inverse = self.transform.inverse();
     }
 
-    pub fn render(&self, world: &World) -> Canvas {
+    pub fn render(&mut self, world: &World) -> Canvas {
         let mut image = Canvas::new(self.hsize, self.vsize);
 
         for y in 0..self.vsize {
@@ -88,12 +147,15 @@ impl Camera {
         image
     }
 
-    pub fn render_multithreaded(this: Arc<Self>, world: Arc<World>, num_threads: usize) -> Canvas {
+    pub fn render_multithreaded(this: Arc<Self>, world: Arc<World>) -> Canvas {
         let mut image = Canvas::new(this.hsize, this.vsize);
 
         let mut handles = vec![];
         let (tx, rx): (Sender<RenderThreadResult>, Receiver<RenderThreadResult>) = mpsc::channel();
-        let rows_per_thread = this.vsize / num_threads;
+        let rows = this.vsize;
+        let num_threads = this.render_opts.num_threads;
+        let rows_per_thread = rows / num_threads;
+
         println!(
             "running with {} threads: assigning {} rows per thread",
             num_threads, rows_per_thread
@@ -104,19 +166,24 @@ impl Camera {
             let world_ref = world.clone();
             let tx_ref = tx.clone();
             let handle = thread::spawn(move || {
-                let (start, end) = (i * rows_per_thread, i * rows_per_thread + rows_per_thread);
+                let (start, mut end) = (i * rows_per_thread, i * rows_per_thread + rows_per_thread);
+                if i == num_threads - 1 {
+                    end = rows;
+                }
                 let mut result = RenderThreadResult {
                     start,
                     end,
                     colors: vec![],
                 };
                 for y in start..end {
-                    // if y % 10 == 0 {
-                    //     println!("rendering row in thread {} {}/{}", i, y, camera_ref.vsize);
-                    // }
                     for x in 0..camera_ref.hsize {
-                        let ray = camera_ref.ray_for_pixel(x, y);
-                        let color = world_ref.color_at(&ray, MAX_RECURSION_DEPTH);
+                        let rays = camera_ref.rays_for_pixel(x, y);
+                        let mut colors = vec![];
+                        for ray in rays.iter() {
+                            let color = world_ref.color_at(&ray, MAX_RECURSION_DEPTH);
+                            colors.push(color);
+                        }
+                        let color = Color::average(&colors);
                         result.colors.push(color);
                     }
                 }
@@ -125,54 +192,10 @@ impl Camera {
             handles.push(handle);
         }
 
-        // let camera_ref = this.clone();
-        // let world_ref = world.clone();
-        // let (tx, rx): (Sender<RenderThreadResult>, Receiver<RenderThreadResult>) = mpsc::channel();
-        // let tx_ref = tx.clone();
-        // let handle1 = thread::spawn(move || {
-        //     let (start, end) = (0, camera_ref.vsize / 2);
-        //     let mut result = RenderThreadResult {
-        //         start,
-        //         end,
-        //         colors: vec![],
-        //     };
-        //     for y in start..end {
-        //         if y % 10 == 0 {
-        //             println!("rendering row in thread 1 {}/{}", y, camera_ref.vsize);
-        //         }
-        //         for x in 0..camera_ref.hsize {
-        //             let ray = camera_ref.ray_for_pixel(x, y);
-        //             let color = world_ref.color_at(&ray, MAX_RECURSION_DEPTH);
-        //             result.colors.push(color);
-        //         }
-        //     }
-        //     tx_ref.send(result).unwrap();
-        // });
-
-        // let camera_ref2 = this.clone();
-        // let handle2 = thread::spawn(move || {
-        //     let (start, end) = (camera_ref2.vsize / 2, camera_ref2.vsize);
-        //     let mut result = RenderThreadResult {
-        //         start,
-        //         end,
-        //         colors: vec![],
-        //     };
-        //     for y in start..end {
-        //         if y % 10 == 0 {
-        //             println!("rendering row in thread 2 {}/{}", y, camera_ref2.vsize);
-        //         }
-
-        //         for x in 0..camera_ref2.hsize {
-        //             let ray = camera_ref2.ray_for_pixel(x, y);
-        //             let color = world.color_at(&ray, MAX_RECURSION_DEPTH);
-        //             result.colors.push(color);
-        //         }
-        //     }
-        //     tx.send(result).unwrap();
-        // });
-
         for _ in 0..num_threads {
-            let res = rx.recv().unwrap();
+            let res = rx
+                .recv()
+                .expect("failed to receive render result from thread");
             println!("received colors array from thread");
             let mut i = 0;
             for y in res.start..res.end {
@@ -191,6 +214,41 @@ impl Camera {
         }
         println!("all render threads done!");
         image
+    }
+}
+
+#[derive(Debug)]
+pub struct RenderOpts {
+    num_threads: usize,
+    aa_samples: AASamples,
+}
+
+#[derive(Debug)]
+pub enum AASamples {
+    X1,
+    X2,
+    X4,
+    X8,
+    X16,
+}
+
+impl Default for RenderOpts {
+    fn default() -> Self {
+        Self {
+            num_threads: 1,
+            aa_samples: AASamples::X1,
+        }
+    }
+}
+
+impl RenderOpts {
+    pub fn num_threads(&mut self, n: usize) {
+        assert!(n > 0);
+        self.num_threads = n;
+    }
+
+    pub fn aa_samples(&mut self, samples: AASamples) {
+        self.aa_samples = samples;
     }
 }
 

@@ -116,7 +116,7 @@ fn main() -> Result<()> {
 
     // let canvas = camera.render(&world);
     // save_ppm(&canvas, Path::new("renders/first_scene.ppm"))
-    let canvas = camera::Camera::render_multithreaded(Arc::new(camera), Arc::new(world), 1);
+    let canvas = camera::Camera::render_multithreaded(Arc::new(camera), Arc::new(world));
 
     let exporter = PngExporter {};
     exporter.save(
